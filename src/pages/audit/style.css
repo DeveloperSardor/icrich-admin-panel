@@ -1,0 +1,113 @@
+.page-container {
+    display: flex;
+  }
+  
+  .docs-grid{}
+  .docs-content {
+    padding:20px;
+    flex: 1;
+    margin-left: 20em;
+  }
+  
+  .docs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pdf-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #007bff;
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+  
+  .docs-header  h1{
+    color: #333;
+  }
+  
+  
+   
+  .add-doc-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .docs-grid {
+    width: 100%;
+    /* display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  margin: 2em auto;
+  width: 60%; */
+  display: flex;
+  gap: 5em;
+  flex-wrap: nowrap;
+  }
+  
+  .doc-card {
+    background: #f9f9f9;
+    padding: 20px;
+    width: 300px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-buttons {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  button {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  .modal {
+    width: 50%;
+    margin: auto;
+    margin-top: 3em;
+    background: white;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .overlay {
+    background: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .close-modal{
+    margin-top: 1em;
+    background: red;
+    margin-left: 4em;
+  }
+  
+
+  .edit_btnn{
+    margin-top: 0.4em;
+    background: orange;
+  }
+  .delete_btnn{
+    background: red;
+  }

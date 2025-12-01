@@ -1,0 +1,224 @@
+/* General page container */
+.page-container {
+    display: flex;
+    height: 100vh;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 250px;
+    background-color: #2d2d2d;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar h2 {
+    color: white;
+  }
+  
+  .vacancies-content {
+    flex: 1;
+    background-color: #f4f7fb;
+    padding: 20px;
+    margin-left: 20em;
+    overflow-y: auto;
+  }
+  
+  .vacancies-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .vacancies-header h1 {
+    font-size: 24px;
+    color: #333;
+  }
+  
+  .add-vacancy-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .add-vacancy-button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Vacancies grid */
+  .vacancies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .vacancy-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    transition: transform 0.2s ease;
+  }
+  
+  .vacancy-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .vacancy-card h3 {
+    font-size: 20px;
+    color: #333;
+  }
+  
+  .vacancy-card p {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  .card-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .card-buttons button {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .card-buttons button:hover {
+    background-color: #218838;
+  }
+  
+  .card-buttons button:nth-child(2) {
+    background-color: #dc3545;
+  }
+  
+  .card-buttons button:nth-child(2):hover {
+    background-color: #c82333;
+  }
+  
+  /* Modal Styling */
+  .modal {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 50px auto;
+    position: relative;
+  }
+  
+  .modal h2 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .modal input,
+  .modal textarea,
+  .modal select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+  }
+  
+  .modal textarea {
+    height: 50px;
+    resize: none;
+  }
+  
+  .modal button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+  
+  .modal button:hover {
+    background-color: #0056b3;
+  }
+  
+  .close-modal {
+    padding: 10px 20px;
+    background-color: #f1f1f1;
+    color: #333;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+  
+  .close-modal:hover {
+    background-color: #ddd;
+  }
+  
+  /* Modal overlay */
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .vacancies-grid {
+      grid-template-columns: 1fr;
+    }
+  
+    .vacancies-header h1 {
+      font-size: 20px;
+    }
+  
+    .add-vacancy-button {
+      font-size: 14px;
+    }
+  
+    .vacancy-card {
+      padding: 15px;
+    }
+  
+    .card-buttons button {
+      font-size: 12px;
+    }
+  
+    .modal {
+      padding: 20px;
+      max-width: 500px;
+    }
+  
+    .modal h2 {
+      font-size: 20px;
+    }
+  
+    .modal button {
+      font-size: 14px;
+    }
+  }
+  

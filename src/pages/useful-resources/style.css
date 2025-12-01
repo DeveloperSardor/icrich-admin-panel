@@ -1,0 +1,288 @@
+/* General Styles */
+.resources-page {
+    display: flex;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+  }
+  
+  .resources-page .page-layout {
+    display: flex;
+    flex: 1;
+  }
+  
+ .resources-page .resources-content {
+    padding: 2em;
+    flex: 1;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+ .resources-page h1 {
+    font-size: 2em;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+ .resources-page button {
+    padding: 0.8em 1.5em;
+    background-color: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 1em;
+  }
+  
+ .resources-page button:hover {
+    background-color: #45a049;
+  }
+  
+ .resources-page .resource-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+ .resources-page .resource-card h3 {
+    font-size: 1.5em;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+ .resources-page .resource-card p {
+    color: #777;
+    margin-bottom: 15px;
+  }
+  
+ .resources-page .pdf-section,
+  .resources-page .youtube-section {
+    margin-top: 10px;
+  }
+  
+ .resources-page .view-pdf-btn,
+ .resources-page .view-youtube-btn {
+    padding: 0.5em 1em;
+    background-color: #1e88e5;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    margin-right: 10px;
+  }
+  
+ .resources-page .view-pdf-btn:hover,
+ .resources-page .view-youtube-btn:hover {
+    background-color: #1976d2;
+  }
+  
+  .resources-actions button {
+    padding: 0.6em 1em;
+    background-color: #ff7043;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+  }
+  
+  .resources-actions button:hover {
+    background-color: #f4511e;
+  }
+  
+  /* Modal Styles */
+ .resources-page .ReactModal__Overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+  }
+  
+ .resources-page .ReactModal__Content {
+    background-color: white;
+    padding: 2em;
+    border-radius: 10px;
+    width: 600px;
+    margin: 0 auto;
+    position: relative;
+  }
+  
+ .resources-page .add_title {
+    font-size: 1.8em;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+ .resources-page .modal__form input,
+ .resources-page .modal__form textarea {
+    width: 100%;
+    padding: 0.8em;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+  }
+  
+ .resources-page .modal__form input:focus,
+ .resources-page .modal__form textarea:focus {
+    border-color: #4caf50;
+    outline: none;
+  }
+  
+ .resources-page button[type="submit"] {
+    background-color: #4caf50;
+    padding: 1em 2em;
+    border: none;
+    color: white;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 15px;
+  }
+  
+ .resources-page button[type="submit"]:hover {
+    background-color: #45a049;
+  }
+  
+  /* Pagination Styles */
+ .resources-page .pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+    list-style: none;
+    padding: 0;
+  }
+  
+.resources-page  .pagination li {
+    margin: 0 10px;
+  }
+  
+ .resources-page .pagination a {
+    text-decoration: none;
+    color: #333;
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+  }
+  
+ .resources-page .pagination a:hover {
+    background-color: #f4f4f4;
+  }
+  
+ .resources-page .pagination .active a {
+    background-color: #4caf50;
+    color: white;
+    border: 1px solid #4caf50;
+  }
+  
+ .resources-page .pagination .disabled a {
+    color: #ccc;
+    pointer-events: none;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .resources-content {
+      padding: 1.5em;
+    }
+  
+    .resource-card {
+      padding: 15px;
+    }
+  
+   .resources-page .modal__form input,
+   .resources-page .modal__form textarea {
+      padding: 0.6em;
+    }
+  
+   .resources-page .add_title {
+      font-size: 1.5em;
+    }
+  
+   .resources-page button[type="submit"] {
+      padding: 0.8em 1.8em;
+    }
+  }
+  
+
+
+  .resources-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: 20em;
+    margin-top: 3em;
+    gap: 20px;
+  }
+  
+  .resource-card {
+    width: 30%;
+    background-color: #f4f4f4;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .resource-card h3 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+  }
+  
+  .resource-card p {
+    font-size: 1em;
+    margin-bottom: 20px;
+    color: #555;
+  }
+  
+  .resources-page .youtube-section iframe {
+    border-radius: 10px;
+    max-width: 100%;
+  }
+  
+ .resources-page .pdf-section a {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 1em;
+  }
+  
+ .resources-page .pdf-section a:hover {
+    background-color: #45a049;
+  }
+  
+ .resources-page .pdf-section a img {
+    margin-right: 10px;
+    width: 20px;
+    height: 20px;
+  }
+  
+ .resources-page .resources-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.5em;
+    justify-content: flex-end;
+  }
+  
+ .resources-page .edit__btn, button {
+    padding: 8px 16px;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+  }
+  
+ .resources-page .edit__btn:hover, button:hover {
+    background-color: #0056b3;
+  }
+  

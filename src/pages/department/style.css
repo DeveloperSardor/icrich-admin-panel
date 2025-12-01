@@ -1,0 +1,57 @@
+.department-page {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .department-page form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .department-page button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .department-page .department-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .department-page .department-card {
+    width: 200px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+  }
+  
+  .department-page .department-card img {
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+  }
+  
+  .department-page .department-card button {
+    padding: 5px;
+    margin: 5px;
+    border-radius: 4px;
+  }
+  
+  .department-page .department-card button:first-child {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .department-page .department-card button:last-child {
+    background-color: #f44336;
+    color: white;
+  }
+  

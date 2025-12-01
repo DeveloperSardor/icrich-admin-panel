@@ -1,0 +1,238 @@
+
+  .articles-actions button {
+    background-color: #ff4757;
+    margin-right: 10px;
+  }
+  
+  .articles-actions button:hover {
+    background-color: #ff6b6b;
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 10px;
+  }
+  
+  .pagination a {
+    padding: 8px 12px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    color: #495057;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .pagination a:hover,
+  .pagination .active {
+    background-color: #007bff !important;
+    color: white;
+  }
+  
+  .articles-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+    width: 60%;
+    margin: 2em auto;
+  }
+  
+  .articles-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s;
+    width: 400px;
+  }
+  
+  .articles-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .articles-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+  }
+  
+  .articles-card h3 {
+    font-size: 18px;
+    margin: 10px 15px 0;
+    color: #343a40;
+  }
+  
+  .articles-card p {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 10px 15px 15px;
+  }
+  
+  .articles-actions {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+  }
+  
+  /* Modal Styles */
+  /* .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 75%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    margin: 0 auto;
+  } */
+  
+  /* .modal-content {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    width: 70%;
+    max-width: 400px ;
+    position: relative;
+  } */
+  
+  .ReactModal__Content{
+   margin: 0 auto;
+   width: 70%;
+  }
+  .ReactModal__Content .add_title{
+    margin-left: 5em;
+  }
+  .modal__form{
+    width: 80%;
+    margin: 0.5em auto;
+  }
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  
+  .close-btn:hover {
+    color: #ff4757;
+  }
+  .edit__btn{
+    background: #f4db36d0 !important;
+  }
+  
+  .edit__btn:hover{
+  background-color: #f4c136 !important;
+  }
+  .modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .modal-content input,
+  .modal-content textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+  textarea{
+    height: 50px;
+  }
+  
+  .modal-content input:focus,
+  .modal-content textarea:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  
+  .modal-content img {
+    max-width: 120px;
+    border-radius: 5px;
+    margin: 10px 0;
+  }
+  
+  .modal-content button[type="submit"] {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .modal-content button[type="submit"]:hover {
+    background-color: #0056b3;
+  }
+  
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 20px;
+    }
+  
+    .articles-card h3 {
+      font-size: 16px;
+    }
+  
+    .articles-card p {
+      font-size: 12px;
+    }
+  }
+  
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 10px;
+  }
+  
+  .pagination a,
+  .pagination .pagination-previous,
+  .pagination .pagination-next {
+    padding: 8px 12px;
+    background-color: #007bff;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+  }
+  
+  .pagination a:hover,
+  .pagination .pagination-previous:hover,
+  .pagination .pagination-next:hover {
+    background-color: #0056b3;
+  }
+  
+  .pagination .active {
+    background-color: #0056b3 !important;
+    font-weight: bold;
+  }
+  
+  .pagination .pagination-previous,
+  .pagination .pagination-next {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  
+  .pagination .disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+  }
+  
