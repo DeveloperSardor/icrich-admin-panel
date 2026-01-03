@@ -1,382 +1,542 @@
 import React, { useState, useEffect, useContext } from "react";
-import Modal from "react-modal";
+import axios from "axios";
+import toast from "react-hot-toast";
+import ReactPaginate from "react-paginate";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import Sidebar from "../../components/sidebar/Sidebar";
+import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
-
-Modal.setAppElement("#root");
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiImage,
+  FiSearch,
+  FiX,
+  FiFolder,
+  FiUsers,
+  FiMove
+} from "react-icons/fi";
+import "./style.css";
 
 const DepartmentForm = () => {
   const { currentLang } = useContext(Context);
-  const [departmentList, setDepartmentList] = useState([]);
-  const [titleEn, setTitleEn] = useState("");
-  const [titleRu, setTitleRu] = useState("");
-  const [titleUz, setTitleUz] = useState("");
-  const [imgUrl, setImgUrl] = useState("");
-  const [uploadError, setUploadError] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTitle, setModalTitle] = useState("Add Department");
+  const { t } = useTranslation("global");
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-  // Fetch department list on mount
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/department`);
-        const data = await response.json();
-        setDepartmentList(data.data || []);
-      } catch (error) {
-        console.error("Error fetching department list:", error);
-      }
-    };
+  const [departmentList, setDepartmentList] = useState([]);
+  const [filteredDepartments, setFilteredDepartments] = useState([]);
+  const [formData, setFormData] = useState({
+    title: {
+      en: "",
+      ru: "",
+      uz: "",
+    },
+    img: "",
+    order: 0,
+  });
+  const [editingId, setEditingId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedDepts, setExpandedDepts] = useState({});
+  const itemsPerPage = 6;
 
+  useEffect(() => {
     fetchDepartments();
   }, []);
 
-  // Handle image upload
+useEffect(() => {
+  if (searchQuery.trim() === "") {
+    // Sort by order
+    const sorted = [...departmentList].sort((a, b) => a.order - b.order);
+    setFilteredDepartments(sorted);
+  } else {
+    const filtered = departmentList.filter((dept) => {
+      const searchLower = searchQuery.toLowerCase();
+      
+      const titleMatch = 
+        dept.title?.en?.toLowerCase().includes(searchLower) ||
+        dept.title?.ru?.toLowerCase().includes(searchLower) ||
+        dept.title?.uz?.toLowerCase().includes(searchLower);
+      
+      return titleMatch;
+    }).sort((a, b) => a.order - b.order); // Sort qo'shish
+    
+    setFilteredDepartments(filtered);
+    setCurrentPage(0);
+  }
+}, [searchQuery, departmentList]);
+
+ const fetchDepartments = async () => {
+  try {
+    setLoading(true);
+    const response = await axios.get(`${BACKEND_URL}/api/department`);
+    if (response.data.success) {
+      const sorted = [...response.data.data].sort((a, b) => a.order - b.order);
+      setDepartmentList(sorted);
+      setFilteredDepartments(sorted);
+    } else {
+      toast.error(t("fetchError"));
+    }
+  } catch (error) {
+    console.error("Error fetching departments:", error);
+    toast.error(t("fetchError"));
+  } finally {
+    setLoading(false);
+  }
+};
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    setImageUploading(true);
     const data = new FormData();
     data.append("file", file);
     data.append("upload_preset", "chat-app");
     data.append("cloud_name", "roadsidecoder");
 
     try {
-      const res = await fetch(
+      const res = await axios.post(
         "https://api.cloudinary.com/v1_1/roadsidecoder/image/upload",
-        { method: "POST", body: data }
+        data
       );
-      const result = await res.json();
-      if (result.secure_url) {
-        setImgUrl(result.secure_url);
-        setUploadError("");
-      } else {
-        setUploadError("Image upload failed.");
+      
+      if (res.data.secure_url) {
+        setFormData({ ...formData, img: res.data.secure_url });
+        toast.success(t("imageUploadSuccess"));
       }
     } catch (error) {
       console.error("Error uploading image:", error);
-      setUploadError("Image upload failed.");
+      toast.error(t("imageUploadError"));
+    } finally {
+      setImageUploading(false);
     }
   };
 
-  // Open modal for adding
   const openAddModal = () => {
     setEditingId(null);
-    setTitleEn("");
-    setTitleRu("");
-    setTitleUz("");
-    setImgUrl("");
-    setModalTitle("Add Department");
+    setFormData({
+      title: {
+        en: "",
+        ru: "",
+        uz: "",
+      },
+      img: "",
+      order: departmentList.length,
+    });
     setIsModalOpen(true);
   };
 
-  // Open modal for editing
   const handleEdit = (department) => {
     setEditingId(department._id);
-    setTitleEn(department.title_en);
-    setTitleRu(department.title_ru);
-    setTitleUz(department.title_uz);
-    setImgUrl(department.img);
-    setModalTitle("Edit Department");
+    setFormData({
+      title: {
+        en: department.title?.en || "",
+        ru: department.title?.ru || "",
+        uz: department.title?.uz || "",
+      },
+      img: department.img || "",
+      order: department.order || 0,
+    });
     setIsModalOpen(true);
   };
 
-  // Close modal
   const closeModal = () => {
     setEditingId(null);
-    setTitleEn("");
-    setTitleRu("");
-    setTitleUz("");
-    setImgUrl("");
-    setModalTitle("Add Department");
+    setFormData({
+      title: {
+        en: "",
+        ru: "",
+        uz: "",
+      },
+      img: "",
+      order: 0,
+    });
     setIsModalOpen(false);
   };
 
-  // Handle delete
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this department?")) {
-      try {
-        const response = await fetch(
-          `${BACKEND_URL}/api/department/${id}`,
-          { method: "DELETE" }
-        );
+    if (!window.confirm(t("confirmDelete"))) return;
 
-        if (response.ok) {
-          setDepartmentList((prevList) =>
-            prevList.filter((item) => item._id !== id)
-          );
-          alert("Department deleted successfully.");
-        } else {
-          alert("Failed to delete department. Please try again.");
-        }
-      } catch (error) {
-        console.error("Error deleting department:", error);
-        alert("An error occurred while deleting. Please try again.");
+    try {
+      const response = await axios.delete(`${BACKEND_URL}/api/department/${id}`);
+      
+      if (response.data.success) {
+        toast.success(t("deleteSuccess"));
+        fetchDepartments();
+      } else {
+        toast.error(response.data.message || t("deleteError"));
       }
+    } catch (error) {
+      console.error("Error deleting department:", error);
+      toast.error(error.response?.data?.message || t("deleteError"));
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const updatedData = {
-      title_en: titleEn,
-      title_ru: titleRu,
-      title_uz: titleUz,
-      img: imgUrl,
-    };
-  
-    // Log the data being sent to server for debugging
-    console.log("Data being sent to server:", updatedData);
-  
+
     try {
-      const response = editingId
-        ? await fetch(`${BACKEND_URL}/api/department/${editingId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedData),
-          })
-        : await fetch(`${BACKEND_URL}/api/department`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedData),
-          });
-  
-      const result = await response.json();
-      console.log("Server response status:", response.status);
-      console.log("Server response body:", result);
-  
-      if (response.ok) {
-        if (editingId) {
-          // Update the department list on successful edit
-          setDepartmentList((prevList) =>
-            prevList.map((item) =>
-              item._id === editingId ? { ...item, ...updatedData } : item
-            )
-          );
-        } else {
-          // Add new department on successful create
-          setDepartmentList((prevList) => [
-            ...prevList,
-            { ...updatedData, _id: result.data._id },
-          ]);
-        }
-  
-        alert(
-          editingId
-            ? "Department updated successfully"
-            : "Department added successfully"
+      const url = editingId
+        ? `${BACKEND_URL}/api/department/${editingId}`
+        : `${BACKEND_URL}/api/department`;
+      const method = editingId ? "put" : "post";
+
+      const response = await axios[method](url, formData);
+
+      if (response.data.success) {
+        toast.success(
+          editingId ? t("editSuccess") : t("addSuccess")
         );
+        fetchDepartments();
         closeModal();
       } else {
-        const errorMessage = result.message || "Failed to save department. Please try again.";
-        console.error("Error:", errorMessage);
-        alert(errorMessage);
+        toast.error(response.data.message || t("error"));
       }
     } catch (error) {
       console.error("Error submitting department:", error);
-      alert("An error occurred while saving department. Please try again.");
+      toast.error(error.response?.data?.message || t("error"));
     }
   };
-  
-  
 
-  const [t, i18] = useTranslation("global");
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(filteredDepartments);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setFilteredDepartments(items);
+
+    // Update orders in backend
+    try {
+      const updatePromises = items.map((item, index) =>
+        axios.put(`${BACKEND_URL}/api/department/${item._id}/reorder`, {
+          order: index
+        })
+      );
+
+      await Promise.all(updatePromises);
+      toast.success("Tartib muvaffaqiyatli o'zgartirildi");
+      fetchDepartments();
+    } catch (error) {
+      console.error("Error updating order:", error);
+      toast.error("Tartibni o'zgartirishda xatolik");
+      fetchDepartments();
+    }
+  };
+
+  const toggleExpand = (deptId) => {
+    setExpandedDepts(prev => ({
+      ...prev,
+      [deptId]: !prev[deptId]
+    }));
+  };
+
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleInputChange = (field, value) => {
+    if (field.startsWith('title.')) {
+      const lang = field.split('.')[1];
+      setFormData({
+        ...formData,
+        title: {
+          ...formData.title,
+          [lang]: value
+        }
+      });
+    } else {
+      setFormData({ ...formData, [field]: value });
+    }
+  };
+
+  const pageCount = Math.ceil(filteredDepartments.length / itemsPerPage);
+  const offset = currentPage * itemsPerPage;
+  const currentDepartments = filteredDepartments.slice(offset, offset + itemsPerPage);
 
   return (
-    <div>
+    <div className="department-page">
       <Sidebar />
-      <div style={styles.mainContent}>
-        <button onClick={openAddModal} style={styles.addButton}>
-          {t("addDepartment")}
-        </button>
-
-        <div style={styles.cardGrid}>
-          {departmentList.map((department) => (
-            <div key={department._id} style={styles.card}>
-              <img
-                src={department.img}
-                alt={department.title_en}
-                style={styles.cardImage}
-              />
-              <h3>
-                {currentLang === "en"
-                  ? department.title_en
-                  : currentLang === "ru"
-                  ? department.title_ru
-                  : department.title_uz}
-              </h3>
-              <div style={styles.cardButtons}>
-                <button
-                  onClick={() => handleEdit(department)}
-                  style={styles.editButton}
-                >
-                  {t("editDepartment")}
-                </button>
-                <button
-                  onClick={() => handleDelete(department._id)}
-                  style={styles.deleteButton}
-                >
-                  {t("deleteDepartment")}
-                </button>
-              </div>
-            </div>
-          ))}
+      <div className="department-content">
+        <div className="department-header">
+          <div>
+            <h1>{t("department")}</h1>
+            <p className="department-subtitle">
+              {t("totalDepartments")}: <strong>{filteredDepartments.length}</strong> {t("departmentsCount")}
+            </p>
+          </div>
+          <button onClick={openAddModal} className="add-department-btn">
+            <FiPlus size={20} />
+            {t("addDepartment")}
+          </button>
         </div>
-      </div>
 
-      <Modal isOpen={isModalOpen} onRequestClose={closeModal} style={styles.modal}>
-        <h2 style={styles.modalTitle}>{modalTitle}</h2>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="text"
-            placeholder="Title (English)"
-            value={titleEn}
-            onChange={(e) => setTitleEn(e.target.value)}
-            style={styles.input}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Title (Русский)"
-            value={titleRu}
-            onChange={(e) => setTitleRu(e.target.value)}
-            style={styles.input}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Title (O‘zbekcha)"
-            value={titleUz}
-            onChange={(e) => setTitleUz(e.target.value)}
-            style={styles.input}
-            required
-          />
-          <input type="file" onChange={handleFileChange} style={styles.input} />
-          {imgUrl && <img src={imgUrl} alt="Preview" style={styles.preview} />}
-          {uploadError && <p style={styles.errorText}>{uploadError}</p>}
-          <div style={styles.buttonGroup}>
-            <button type="submit" style={styles.saveButton}>
+        <div className="search-container">
+          <div className="search-wrapper">
+            <FiSearch size={20} className="search-icon" />
+            <input
+              type="text"
+              placeholder={t("searchDepartments")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                <FiX size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner-large"></div>
+            <p>{t("loading")}</p>
+          </div>
+        ) : filteredDepartments.length === 0 ? (
+          <div className="empty-state">
+            <FiFolder size={64} />
+            <h3>{searchQuery ? t("noSearchResults") : t("noDepartments")}</h3>
+            <p>{searchQuery ? t("noSearchResults") : t("noDepartmentsDesc")}</p>
+          </div>
+        ) : (
+          <>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="departments">
+                {(provided) => (
+                  <div
+                    className="department-grid"
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                  >
+                    {currentDepartments.map((department, index) => (
+                      <Draggable
+                        key={department._id}
+                        draggableId={department._id}
+                        index={offset + index}
+                      >
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`department-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                          >
+                            <div className="drag-handle" {...provided.dragHandleProps}>
+                              <FiMove size={20} />
+                              <span className="order-number">#{department.order}</span>
+                            </div>
+
+                            <div className="department-card-media">
+                              {department.img ? (
+                                <img src={department.img} alt={department.title?.en} />
+                              ) : (
+                                <div className="no-media">
+                                  <FiFolder size={48} />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="department-card-content">
+                              <h3 className="department-title">
+                                {currentLang === "en"
+                                  ? department.title?.en
+                                  : currentLang === "ru"
+                                  ? department.title?.ru
+                                  : department.title?.uz}
+                              </h3>
+
+                              {department.employees && department.employees.length > 0 && (
+                                <div className="employees-section">
+                                  <button
+                                    className="employees-toggle"
+                                    onClick={() => toggleExpand(department._id)}
+                                  >
+                                    <FiUsers size={16} />
+                                    <span>{department.employees.length} {t('employee')}</span>
+                                  </button>
+
+                                  {expandedDepts[department._id] && (
+                                    <div className="employees-list">
+                                      {department.employees.map((employee) => (
+                                        <div key={employee._id} className="employee-item">
+                                          <img 
+                                            src={employee.img || '/default-avatar.png'} 
+                                            alt={employee.name?.[currentLang]}
+                                          />
+                                          <div>
+                                            <p className="employee-name">
+                                              {employee.name?.[currentLang]}
+                                            </p>
+                                            <p className="employee-position">
+                                              {employee.position?.[currentLang]}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="department-card-actions">
+                              <button
+                                className="action-btn edit-btn"
+                                onClick={() => handleEdit(department)}
+                                title={t("edit")}
+                              >
+                                <FiEdit2 size={16} />
+                                <span className="action-btn-text">{t("edit")}</span>
+                              </button>
+                              <button
+                                className="action-btn delete-btn"
+                                onClick={() => handleDelete(department._id)}
+                                title={t("delete")}
+                              >
+                                <FiTrash2 size={16} />
+                                <span className="action-btn-text">{t("delete")}</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+
+            {pageCount > 1 && (
+              <ReactPaginate
+                previousLabel={`← ${t("previous")}`}
+                nextLabel={`${t("next")} →`}
+                breakLabel="..."
+                pageCount={pageCount}
+                marginPagesDisplayed={2}
+                pageRangeDisplayed={3}
+                onPageChange={handlePageClick}
+                containerClassName="pagination"
+                activeClassName="active"
+                previousClassName="pagination-btn"
+                nextClassName="pagination-btn"
+                disabledClassName="disabled"
+                pageClassName="pagination-page"
+                forcePage={currentPage}
+              />
+            )}
+          </>
+        )}
+
+        <Modal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          onSubmit={handleSubmit}
+        >
+          <div className="modal-form">
+            <h2 className="modal-title">
+              {editingId ? t("editDepartment") : t("addDepartment")}
+            </h2>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("uzbek")}</h3>
+              <input
+                type="text"
+                placeholder="Bo'lim nomi (O'zbekcha)"
+                value={formData.title.uz}
+                onChange={(e) => handleInputChange("title.uz", e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("russian")}</h3>
+              <input
+                type="text"
+                placeholder="Название отдела (Русский)"
+                value={formData.title.ru}
+                onChange={(e) => handleInputChange("title.ru", e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("english")}</h3>
+              <input
+                type="text"
+                placeholder="Department Name (English)"
+                value={formData.title.en}
+                onChange={(e) => handleInputChange("title.en", e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">Tartib raqami</h3>
+              <input
+                type="number"
+                placeholder="0"
+                value={formData.order}
+                onChange={(e) => handleInputChange("order", parseInt(e.target.value))}
+                className="form-input"
+                min="0"
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("departmentImage")}</h3>
+              <div className="file-input-wrapper">
+                <label className="file-input-label">
+                  <FiImage size={20} />
+                  <span>
+                    {imageUploading ? t("uploading") : t("uploadImage")}
+                  </span>
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    disabled={imageUploading}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
+
+              {formData.img && !imageUploading && (
+                <div className="image-preview">
+                  <img src={formData.img} alt="Preview" />
+                  <button
+                    type="button"
+                    className="remove-image-btn"
+                    onClick={() => handleInputChange("img", "")}
+                  >
+                    <FiX size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button type="submit" className="submit-btn" disabled={imageUploading}>
               {editingId ? t("save") : t("addDepartment")}
             </button>
-
-            <button type="button" onClick={closeModal} style={styles.cancelButton}>
-              {t("cancel")}
-            </button>
           </div>
-        </form>
-      </Modal>
+        </Modal>
+      </div>
     </div>
   );
-};
-
-const styles = {
-  mainContent: {
-    padding: "20px",
-    marginLeft: "20em",
-  },
-  addButton: {
-    padding: "10px 20px",
-    backgroundColor: "#4CAF50",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-    borderRadius: "4px",
-  },
-  cardGrid: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "20px",
-    marginTop: "20px",
-  },
-  card: {
-    width: "350px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    padding: "10px",
-    textAlign: "center",
-  },
-  cardImage: {
-    width: "100%",
-    height: "250px",
-    borderRadius: "8px",
-    marginBottom: "10px",
-  },
-  cardButtons: {
-    display: "flex",
-    marginTop : "1em",
-    justifyContent: "space-between",
-  },
-  editButton: {
-    backgroundColor: "#4CAF50",
-    color: "white",
-    padding: "6px 8px",
-    cursor: "pointer",
-    border: "none",
-    borderRadius: "4px",
-  },
-  deleteButton: {
-    backgroundColor: "#f44336",
-    color: "white",
-    padding: "6px 8px",
-    cursor: "pointer",
-    border: "none",
-    borderRadius: "4px",
-  },
-  modal: {
-    content: {
-      padding: "20px",
-      width: "400px",
-      margin: "auto",
-      borderRadius: "8px",
-    },
-  },
-  modalTitle: {
-    textAlign: "center",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  input: {
-    margin: "10px 0",
-    padding: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-  },
-  preview: {
-    width: "100%",
-    height: "150px",
-    objectFit: "cover",
-    marginTop: "10px",
-  },
-  errorText: {
-    color: "red",
-    fontSize: "14px",
-  },
-  buttonGroup: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: "20px",
-  },
-  saveButton: {
-    padding: "10px 20px",
-    backgroundColor: "#4CAF50",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-    borderRadius: "4px",
-  },
-  cancelButton: {
-    padding: "10px 20px",
-    backgroundColor: "#f44336",
-    color: "white",
-    border: "none",
-    cursor: "pointer",
-    borderRadius: "4px",
-  },
 };
 
 export default DepartmentForm;

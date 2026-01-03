@@ -5,29 +5,31 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "react-modal";
 import { useTranslation } from "react-i18next";
 import Context from "../../context/Context";
+import Slider from "react-slick";
 import "./style.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import Slider from "react-slick";
-
-
 
 const NationalListPage = () => {
-    const settings = {
-        dots: true,
-        infinite: true, // Doimiy loop qilish
-        speed: 500,
-        slidesToShow: 1, // Har safar 1 slaydni ko'rsatish
-        slidesToScroll: 1,
-        autoplay: true,
-        autoplaySpeed: 3000,
-    };
-    
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   const { t } = useTranslation("global");
   const contextDatas = useContext(Context);
   const currentLang = contextDatas.currentLang;
 
+  // Slider settings
+  const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    pauseOnHover: true,
+    adaptiveHeight: true,
+  };
+
+  // State management
   const [nationalData, setNationalData] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -50,6 +52,7 @@ const NationalListPage = () => {
     fetchNational();
   }, [currentLang]);
 
+  // Fetch national list data
   const fetchNational = async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/api/national-list`);
@@ -59,10 +62,11 @@ const NationalListPage = () => {
         toast.error(t("fetchNationalError"));
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || t("errorFetchingData"));
     }
   };
 
+  // Modal handlers
   const handleModalClose = () => {
     setModalOpen(false);
     setIsEditing(false);
@@ -84,10 +88,30 @@ const NationalListPage = () => {
     setYoutubeError("");
   };
 
+  // YouTube validation
   const validateYouTubeUrl = (url) => {
-    const youtubePattern =
-      /^(https?:\/\/)?(www\.youtube\.com\/(?:[^\/\n\s]+\/)*|youtu\.be\/)([a-zA-Z0-9_-]{11})$/;
-    return youtubePattern.test(url);
+    const patterns = [
+      /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+      /^(https?:\/\/)?(www\.)?youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    ];
+    return patterns.some(pattern => pattern.test(url));
+  };
+
+  const getYouTubeVideoId = (url) => {
+    if (!url) return null;
+    
+    try {
+      const urlObj = new URL(url);
+      
+      if (urlObj.hostname === "youtu.be") {
+        return urlObj.pathname.slice(1);
+      } else if (urlObj.hostname.includes("youtube.com")) {
+        return urlObj.searchParams.get("v");
+      }
+    } catch (error) {
+      console.error("Invalid YouTube URL:", error);
+    }
+    return null;
   };
 
   const handleYoutubeLinkChange = (e) => {
@@ -109,12 +133,28 @@ const NationalListPage = () => {
     }
   };
 
+  // File upload handler
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+    
     setLoadingFiles(true);
     const uploadedFiles = [];
 
     for (const file of files) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error(t("invalidFileType"));
+        continue;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(t("fileTooLarge"));
+        continue;
+      }
+
       const uploadData = new FormData();
       uploadData.append("file", file);
       uploadData.append("upload_preset", "chat-app");
@@ -125,18 +165,39 @@ const NationalListPage = () => {
           "https://api.cloudinary.com/v1_1/roadsidecoder/image/upload",
           uploadData
         );
-        uploadedFiles.push(res.data.secure_url );
+        uploadedFiles.push(res.data.secure_url);
       } catch (error) {
         toast.error(t("fileUploadError"));
+        console.error("Upload error:", error);
       }
     }
 
-    setFormData({ ...formData, images: [...formData.images, ...uploadedFiles] });
+    setFormData({ 
+      ...formData, 
+      images: [...formData.images, ...uploadedFiles] 
+    });
     setLoadingFiles(false);
   };
 
+  const handleRemoveFile = (index) => {
+    const updatedImages = formData.images.filter((_, i) => i !== index);
+    setFormData({ ...formData, images: updatedImages });
+  };
+
+  // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
+    if (!formData.title_en || !formData.title_ru || !formData.title_uz) {
+      toast.error(t("allTitlesRequired"));
+      return;
+    }
+
+    if (!formData.text_en || !formData.text_ru || !formData.text_uz) {
+      toast.error(t("allTextsRequired"));
+      return;
+    }
 
     if (!formData.youtube_link && formData.images.length === 0) {
       toast.error(t("addMedia"));
@@ -158,7 +219,7 @@ const NationalListPage = () => {
       title_uz: formData.title_uz,
       text_uz: formData.text_uz,
       youtube_link: formData.youtube_link,
-      images: formData.images.map((file) => file),
+      images: formData.images,
     };
 
     try {
@@ -170,28 +231,34 @@ const NationalListPage = () => {
       const res = await axios[method](url, payload);
 
       if (res.data.success) {
-        toast.success(isEditing ? t("Successfuly updated") : t("Successfuly added"));
+        toast.success(
+          isEditing 
+            ? t("successfullyUpdated") 
+            : t("successfullyAdded")
+        );
         fetchNational();
         handleModalClose();
       } else {
         toast.error(t("errorAddingNational"));
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
+      console.error("Submit error:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  // Edit handler
   const openEditModal = (national) => {
     setFormData({
-      title_en: national.title_en,
-      title_ru: national.title_ru,
-      title_uz: national.title_uz,
-      text_en: national.text_en,
-      text_ru: national.text_ru,
-      text_uz: national.text_uz,
-      youtube_link: national.youtube_link,
+      title_en: national.title_en || "",
+      title_ru: national.title_ru || "",
+      title_uz: national.title_uz || "",
+      text_en: national.text_en || "",
+      text_ru: national.text_ru || "",
+      text_uz: national.text_uz || "",
+      youtube_link: national.youtube_link || "",
       images: national.images || [],
       id: national._id,
     });
@@ -199,34 +266,40 @@ const NationalListPage = () => {
     setModalOpen(true);
   };
 
+  // Delete handler
   const handleDeleteNational = async (id) => {
+    if (!confirm(t("confirmDelete"))) return;
+
     try {
       const res = await axios.delete(`${BACKEND_URL}/api/national-list/${id}`);
       if (res.data.success) {
-        toast.success(data.message);
+        toast.success(t("successfullyDeleted"));
         fetchNational();
       } else {
         toast.error(t("errorDeletingNews"));
       }
     } catch (error) {
       toast.error(error.message);
+      console.error("Delete error:", error);
     }
   };
 
+  // Render uploaded files
   const renderUploadedFiles = () => {
     if (!formData.images || formData.images.length === 0) return null;
-  
+
     return (
       <div className="uploaded-files">
         {formData.images.map((file, index) => (
           <div key={index} className="uploaded-file">
-            <img src={file} alt={`Uploaded ${index}`} />
+            <img src={file} alt={`Upload ${index + 1}`} />
             <button
               type="button"
               onClick={() => handleRemoveFile(index)}
               className="remove-btn"
+              aria-label={t("removeImage")}
             >
-              {t("remove")}
+              ✕
             </button>
           </div>
         ))}
@@ -234,173 +307,243 @@ const NationalListPage = () => {
     );
   };
 
-  const getYouTubeVideoId = (url) => {
-    try {
-      // URL'dagi video ID ni olish
-      const urlObj = new URL(url);
-      if (urlObj.hostname === "youtu.be") {
-        // Agar URL youtu.be formatida bo'lsa
-        return urlObj.pathname.slice(1); // `/videoId` dan videoId'ni oladi
-      } else if (urlObj.hostname === "www.youtube.com" || urlObj.hostname === "youtube.com") {
-        // Agar URL www.youtube.com formatida bo'lsa
-        return urlObj.searchParams.get("v");
-      }
-    } catch (error) {
-      console.error("Invalid YouTube URL:", error);
-    }
-    return null; // Agar noto'g'ri URL bo'lsa, null qaytaradi
+  // Get current language title and text
+  const getCurrentLangData = (national) => {
+    const titleKey = `title_${currentLang}`;
+    const textKey = `text_${currentLang}`;
+    
+    return {
+      title: national[titleKey] || national.title_en || "No title",
+      text: national[textKey] || national.text_en || "No description",
+    };
   };
-  
-
-  const handleRemoveFile = (index) => {
-    const updatedImages = [...formData.images];
-    updatedImages.splice(index, 1);
-    setFormData({ ...formData, images: updatedImages });
-  };
-  
 
   return (
     <div className="national-page">
       <Sidebar />
+      
       <div className="national-content">
-        <h1 className="national">{t('nationalList')}</h1>
-        <button onClick={() => setModalOpen(true)} className="add-btn">
-          {t("add")}
+        <h1 className="national">{t("nationalList")}</h1>
+        
+        <button 
+          onClick={() => setModalOpen(true)} 
+          className="add-btn"
+          aria-label={t("addNew")}
+        >
+          {t("addNew")}
         </button>
-        <div className="news-cards">
-          {nationalData.map((national) => (
-            <div className="news-card" key={national._id}>
-              <h2>
-                {currentLang === "en"
-                  ? national.title_en
-                  : currentLang === "ru"
-                  ? national.title_ru
-                  : national.title_uz}
-              </h2>
-              <p>
-                {currentLang === "en"
-                  ? national.text_en.slice(0, 100)
-                  : currentLang === "ru"
-                  ? national.text_ru.slice(0, 100)
-                  : national.text_uz.slice(0, 30)}
-                ...
-              </p>
-              {national.youtube_link && (
-                <iframe
-    width="300px"
-    height="315"
-    src={`https://www.youtube.com/embed/${getYouTubeVideoId(national?.youtube_link)}`}
-    title="YouTube preview"
-    frameBorder="0"
-    allowFullScreen
-  />
-              )}
-              {national.images?.length > 0 && (
-    <Slider {...settings}>
-        {national.images.map((file, index) => (
-            <div key={index}>
-                <img
-                    src={file}
-                    style={{ width: "200px", maxHeight: "200px", margin: "0.5em auto" }}
-                    alt={`Slide ${index}`}
-                />
-            </div>
-        ))}
-    </Slider>
-)}
 
+        {nationalData.length === 0 ? (
+          <div className="empty-state">
+            <h3>{t("noDataAvailable")}</h3>
+            <p>{t("clickAddToCreate")}</p>
+          </div>
+        ) : (
+          <div className="news-cards">
+            {nationalData.map((national) => {
+              const { title, text } = getCurrentLangData(national);
+              
+              return (
+                <div className="news-card" key={national._id}>
+                  {/* Media Section */}
+                  <div className="media-container">
+                    {national.youtube_link && (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(
+                          national.youtube_link
+                        )}`}
+                        title="YouTube video"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    )}
+                    
+                    {!national.youtube_link && national.images?.length > 0 && (
+                      <Slider {...sliderSettings}>
+                        {national.images.map((image, index) => (
+                          <div key={index}>
+                            <img
+                              src={image}
+                              alt={`${title} - Image ${index + 1}`}
+                            />
+                          </div>
+                        ))}
+                      </Slider>
+                    )}
+                  </div>
 
-              <button onClick={() => openEditModal(national)} className="edit-btn">
-                {t("edit")}
-              </button>
-              <button
-                onClick={() => handleDeleteNational(national._id)}
-                className="delete-btn"
-              >
-                {t("delete")}
-              </button>
-            </div>
-          ))}
-        </div>
+                  {/* Content Section */}
+                  <h2>{title}</h2>
+                  <p>{text.slice(0, 150)}...</p>
+
+                  {/* Action Buttons */}
+                  <div className="card-actions">
+                    <button
+                      onClick={() => openEditModal(national)}
+                      className="edit-btn"
+                      aria-label={t("edit")}
+                    >
+                      ✏️ {t("edit")}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteNational(national._id)}
+                      className="delete-btn"
+                      aria-label={t("delete")}
+                    >
+                      🗑️ {t("delete")}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      <Modal isOpen={modalOpen} onRequestClose={handleModalClose} className="national-modal">
-        <h2>{isEditing ? t("edit") : t("add")}</h2>
+      {/* Modal */}
+      <Modal
+        isOpen={modalOpen}
+        onRequestClose={handleModalClose}
+        className="national-modal"
+        ariaHideApp={false}
+      >
+        <h2>{isEditing ? t("editNational") : t("addNewNational")}</h2>
+        
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={formData.title_en}
-            placeholder={t("titlePlaceholder", { lang: "English" }) + ' En'}
-            onChange={(e) =>
-              setFormData({ ...formData, title_en: e.target.value })
-            }
-          />
-          <textarea
-            value={formData.text_en}
-            placeholder={t("textPlaceholder", { lang: "English" }) + ' En'}
-            onChange={(e) =>
-              setFormData({ ...formData, text_en: e.target.value })
-            }
-          ></textarea>
-          <input
-            type="text"
-            placeholder={t("titlePlaceholder", { lang: "Russian" }) + ' Ру'}
-            value={formData.title_ru}
-            onChange={(e) =>
-  setFormData({ ...formData, title_ru: e.target.value })
-}
-/>
-<textarea
-  value={formData.text_ru}
-  placeholder={t("textPlaceholder", { lang: "Russian" }) + ' Ру'}
-  onChange={(e) =>
-    setFormData({ ...formData, text_ru: e.target.value })
-  }
-></textarea>
-<input
-  type="text"
-  placeholder={t("titlePlaceholder", { lang: "Uzbek" }) + ' Uz'}
-  value={formData.title_uz}
-  onChange={(e) =>
-    setFormData({ ...formData, title_uz: e.target.value })
-  }
-/>
-<textarea
-  value={formData.text_uz}
-  placeholder={t("textPlaceholder", { lang: "Uzbek" }) + ' Uz'}
-  onChange={(e) =>
-    setFormData({ ...formData, text_uz: e.target.value })
-  }
-></textarea>
-<input
-  type="text"
-  value={formData.youtube_link}
-  placeholder={t("youtubePlaceholder")}
-  onChange={handleYoutubeLinkChange}
-/>
-<div className="file-upload">
-  <label htmlFor="file-input">{t("uploadImages")}</label>
-  <input
-    id="file-input"
-    type="file"
-    multiple
-    onChange={handleFileChange}
-    accept="image/*"
-  />
-  {loadingFiles && <p>{t("loadingFiles")}</p>}
-</div>
-{renderUploadedFiles()}
-{youtubeError && <p className="error">{youtubeError}</p>}
-<button type="submit" disabled={loading}>
-  {loading ? t("loading") : t("add")}
-</button>
-<button type="button" onClick={handleModalClose}>
-  {t("cancel")}
-</button>
+          {/* English Fields */}
+          <div className="form-group">
+            <label htmlFor="title-en">{t("titleEn")} *</label>
+            <input
+              id="title-en"
+              type="text"
+              value={formData.title_en}
+              placeholder={t("enterTitleEn")}
+              onChange={(e) =>
+                setFormData({ ...formData, title_en: e.target.value })
+              }
+              required
+            />
+          </div>
 
+          <div className="form-group">
+            <label htmlFor="text-en">{t("textEn")} *</label>
+            <textarea
+              id="text-en"
+              value={formData.text_en}
+              placeholder={t("enterTextEn")}
+              onChange={(e) =>
+                setFormData({ ...formData, text_en: e.target.value })
+              }
+              required
+            />
+          </div>
 
+          {/* Russian Fields */}
+          <div className="form-group">
+            <label htmlFor="title-ru">{t("titleRu")} *</label>
+            <input
+              id="title-ru"
+              type="text"
+              value={formData.title_ru}
+              placeholder={t("enterTitleRu")}
+              onChange={(e) =>
+                setFormData({ ...formData, title_ru: e.target.value })
+              }
+              required
+            />
+          </div>
 
+          <div className="form-group">
+            <label htmlFor="text-ru">{t("textRu")} *</label>
+            <textarea
+              id="text-ru"
+              value={formData.text_ru}
+              placeholder={t("enterTextRu")}
+              onChange={(e) =>
+                setFormData({ ...formData, text_ru: e.target.value })
+              }
+              required
+            />
+          </div>
 
+          {/* Uzbek Fields */}
+          <div className="form-group">
+            <label htmlFor="title-uz">{t("titleUz")} *</label>
+            <input
+              id="title-uz"
+              type="text"
+              value={formData.title_uz}
+              placeholder={t("enterTitleUz")}
+              onChange={(e) =>
+                setFormData({ ...formData, title_uz: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="text-uz">{t("textUz")} *</label>
+            <textarea
+              id="text-uz"
+              value={formData.text_uz}
+              placeholder={t("enterTextUz")}
+              onChange={(e) =>
+                setFormData({ ...formData, text_uz: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          {/* YouTube Link */}
+          <div className="form-group">
+            <label htmlFor="youtube">{t("youtubeLink")}</label>
+            <input
+              id="youtube"
+              type="text"
+              value={formData.youtube_link}
+              placeholder={t("enterYoutubeLink")}
+              onChange={handleYoutubeLinkChange}
+            />
+            {youtubeError && <p className="error">{youtubeError}</p>}
+          </div>
+
+          {/* File Upload */}
+          <div className="file-upload">
+            <label htmlFor="file-input">
+              {loadingFiles ? t("uploading") : t("uploadImages")}
+            </label>
+            <input
+              id="file-input"
+              type="file"
+              multiple
+              onChange={handleFileChange}
+              accept="image/*"
+              disabled={loadingFiles}
+            />
+            <p>{t("maxFileSize")}</p>
+          </div>
+
+          {renderUploadedFiles()}
+
+          {/* Form Actions */}
+          <div className="form-actions">
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={loading || loadingFiles}
+            >
+              {loading ? t("saving") : isEditing ? t("update") : t("add")}
+            </button>
+            <button
+              type="button"
+              onClick={handleModalClose}
+              className="cancel-btn"
+              disabled={loading}
+            >
+              {t("cancel")}
+            </button>
+          </div>
         </form>
       </Modal>
     </div>

@@ -1,25 +1,26 @@
 import React from "react";
-import "./style.css"; // Import CSS for styling
+import { FiX } from "react-icons/fi";
+import "./style.css";
 
 const Modal = ({ isOpen, onClose, onSubmit, children }) => {
-  if (!isOpen) return null; // If modal is not open, do not render it
+  if (!isOpen) return null;
 
   const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent form submission and page reload
-    onSubmit(e); // Trigger the onSubmit passed from the parent component
+    e.preventDefault();
+    onSubmit(e);
   };
 
   return (
     <div className={`modal-overlay ${isOpen ? "open" : ""}`} onClick={onClose}>
       <div
         className="modal-content"
-        onClick={(e) => e.stopPropagation()} // Prevent modal from closing when clicking inside
+        onClick={(e) => e.stopPropagation()}
       >
-        <button className="close-btn" onClick={onClose}>
-          X
+        <button className="modal-close-btn" onClick={onClose}>
+          <FiX size={24} />
         </button>
         <form onSubmit={handleSubmit}>
-          {children} {/* Render form fields passed as children */}
+          {children}
         </form>
       </div>
     </div>

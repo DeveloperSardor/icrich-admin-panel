@@ -1,206 +1,457 @@
-import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
-import './style.css';
-import Sidebar from '../../components/sidebar/Sidebar';
-import Modal from 'react-modal';
-import Context from '../../context/Context';
-import { useTranslation } from 'react-i18next';
-
-Modal.setAppElement('#root');
+import React, { useState, useEffect, useContext } from "react";
+import axios from "axios";
+import toast from "react-hot-toast";
+import ReactPaginate from "react-paginate";
+import Sidebar from "../../components/sidebar/Sidebar";
+import Modal from "../../components/news-add/NewsAdd";
+import Context from "../../context/Context";
+import { useTranslation } from "react-i18next";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiBriefcase,
+  FiSearch,
+  FiX,
+  FiCalendar,
+  FiUsers
+} from "react-icons/fi";
+import "./style.css";
 
 const VacanciesPage = () => {
   const contextDatas = useContext(Context);
   const currentLang = contextDatas.currentLang;
-  const [t, i18n] = useTranslation('global');
+  const { t } = useTranslation("global");
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
   const [vacancies, setVacancies] = useState([]);
-  const [newVacancy, setNewVacancy] = useState({
-    role: '', title_en: '', title_ru: '', title_uz: '', text_en: '', text_ru: '', text_uz: '',
-  });
-  const [editVacancy, setEditVacancy] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filteredVacancies, setFilteredVacancies] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [formData, setFormData] = useState({
+    role: "",
+    title_en: "",
+    title_ru: "",
+    title_uz: "",
+    text_en: "",
+    text_ru: "",
+    text_uz: "",
+  });
+  const [editingId, setEditingId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const itemsPerPage = 6;
 
   useEffect(() => {
     fetchVacancies();
     fetchRoles();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredVacancies(vacancies);
+    } else {
+      const filtered = vacancies.filter((vacancy) => {
+        const searchLower = searchQuery.toLowerCase();
+
+        const titleMatch =
+          vacancy.title_en?.toLowerCase().includes(searchLower) ||
+          vacancy.title_ru?.toLowerCase().includes(searchLower) ||
+          vacancy.title_uz?.toLowerCase().includes(searchLower);
+
+        const textMatch =
+          vacancy.text_en?.toLowerCase().includes(searchLower) ||
+          vacancy.text_ru?.toLowerCase().includes(searchLower) ||
+          vacancy.text_uz?.toLowerCase().includes(searchLower);
+
+        const roleMatch = vacancy.role?.name_en?.toLowerCase().includes(searchLower) ||
+          vacancy.role?.name_ru?.toLowerCase().includes(searchLower) ||
+          vacancy.role?.name_uz?.toLowerCase().includes(searchLower);
+
+        return titleMatch || textMatch || roleMatch;
+      });
+
+      setFilteredVacancies(filtered);
+      setCurrentPage(0);
+    }
+  }, [searchQuery, vacancies]);
+
   const fetchVacancies = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${BACKEND_URL}/api/job-vacancies`);
-      setVacancies(response.data.data);
+      if (response.data.success) {
+        setVacancies(response.data.data);
+        setFilteredVacancies(response.data.data);
+      } else {
+        toast.error(t("fetchError"));
+      }
     } catch (error) {
-      console.error('Error fetching vacancies:', error);
+      console.error("Error fetching vacancies:", error);
+      toast.error(t("fetchError"));
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchRoles = async () => {
     try {
       const response = await axios.get(`${BACKEND_URL}/api/roles`);
-      setRoles(response.data.data);
+      setRoles(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error("Error fetching roles:", error);
     }
   };
 
-  const handleAddVacancy = async () => {
-    try {
-      const response = await axios.post(`${BACKEND_URL}/api/job-vacancies`, newVacancy);
-      setVacancies([...vacancies, response.data.data]);
-      setNewVacancy({
-        role: '', title_en: '', title_ru: '', title_uz: '', text_en: '', text_ru: '', text_uz: ''
-      });
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error adding vacancy:', error);
-    }
-  };
-
-  const handleDeleteVacancy = async (id) => {
-    try {
-      await axios.delete(`${BACKEND_URL}/api/job-vacancies/${id}`);
-      setVacancies(vacancies.filter(vacancy => vacancy._id !== id));
-    } catch (error) {
-      console.error('Error deleting vacancy:', error);
-    }
-  };
-
-  const handleUpdateVacancy = async () => {
-    if (!editVacancy || !editVacancy._id) {
-      console.error('No vacancy selected or vacancy ID is missing');
-      return;
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     try {
-      const response = await axios.put(`${BACKEND_URL}/api/job-vacancies/${editVacancy._id}`, {
-        role: editVacancy.role,
-        title_en: editVacancy.title_en,
-        title_ru: editVacancy.title_ru,
-        title_uz: editVacancy.title_uz,
-        text_en: editVacancy.text_en,
-        text_ru: editVacancy.text_ru,
-        text_uz: editVacancy.text_uz,
-      });
+      const url = editingId
+        ? `${BACKEND_URL}/api/job-vacancies/${editingId}`
+        : `${BACKEND_URL}/api/job-vacancies`;
+      const method = editingId ? "put" : "post";
 
-      if (response.data && response.data.data) {
-        const updatedVacancies = vacancies.map(vacancy =>
-          vacancy._id === editVacancy._id ? response.data.data : vacancy
-        );
-        setVacancies(updatedVacancies);
+      const response = await axios[method](url, formData);
+
+      if (response.data.success) {
+        toast.success(editingId ? t("editSuccess") : t("addSuccess"));
+        fetchVacancies();
+        closeModal();
+      } else {
+        toast.error(t("error"));
       }
-
-      setEditVacancy(null);
-      setIsModalOpen(false);
     } catch (error) {
-      console.error('Error updating vacancy:', error);
+      console.error("Error submitting vacancy:", error);
+      toast.error(t("error"));
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm(t("confirmDelete"))) return;
+
+    try {
+      const response = await axios.delete(`${BACKEND_URL}/api/job-vacancies/${id}`);
+      if (response.data.success) {
+        toast.success(t("deleteSuccess"));
+        setVacancies(vacancies.filter((vacancy) => vacancy._id !== id));
+      } else {
+        toast.error(t("deleteError"));
+      }
+    } catch (error) {
+      console.error("Error deleting vacancy:", error);
+      toast.error(t("deleteError"));
     }
   };
 
   const openModal = (vacancy = null) => {
-    setEditVacancy(vacancy ? { ...vacancy } : null);
-    setNewVacancy({
-      role: '', title_en: '', title_ru: '', title_uz: '', text_en: '', text_ru: '', text_uz: ''
-    });
+    setEditingId(vacancy ? vacancy._id : null);
+    setFormData(
+      vacancy
+        ? {
+            role: vacancy.role?._id || "",
+            title_en: vacancy.title_en || "",
+            title_ru: vacancy.title_ru || "",
+            title_uz: vacancy.title_uz || "",
+            text_en: vacancy.text_en || "",
+            text_ru: vacancy.text_ru || "",
+            text_uz: vacancy.text_uz || "",
+          }
+        : {
+            role: "",
+            title_en: "",
+            title_ru: "",
+            title_uz: "",
+            text_en: "",
+            text_ru: "",
+            text_uz: "",
+          }
+    );
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setEditVacancy(null);
+    setEditingId(null);
+    setFormData({
+      role: "",
+      title_en: "",
+      title_ru: "",
+      title_uz: "",
+      text_en: "",
+      text_ru: "",
+      text_uz: "",
+    });
   };
 
-  const handleInputChange = (e, field) => {
-    const value = e.target.value;
-    if (editVacancy) {
-      setEditVacancy({ ...editVacancy, [field]: value });
-    } else {
-      setNewVacancy({ ...newVacancy, [field]: value });
-    }
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
   };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+
+    const monthsUz = [
+      "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+      "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
+    ];
+
+    const monthsRu = [
+      "января", "февраля", "марта", "апреля", "мая", "июня",
+      "июля", "августа", "сентября", "октября", "ноября", "декабря",
+    ];
+
+    const monthsEn = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+
+    const months =
+      currentLang === "ru" ? monthsRu : currentLang === "en" ? monthsEn : monthsUz;
+
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    return `${day}-${month} ${year}`;
+  };
+
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const pageCount = Math.ceil(filteredVacancies.length / itemsPerPage);
+  const offset = currentPage * itemsPerPage;
+  const currentVacancies = filteredVacancies.slice(offset, offset + itemsPerPage);
 
   return (
-    <div className="page-container">
+    <div className="vacancies-page">
       <Sidebar />
       <div className="vacancies-content">
         <div className="vacancies-header">
-          <h1>{t('vacancies')}</h1> {/* Translated Vacancies title */}
-          <button className="add-vacancy-button" onClick={() => openModal()}>{t('addVacancy')}</button> {/* Translated Add Vacancy button */}
-        </div>
-
-        <div className="vacancies-grid">
-          {vacancies.map(vacancy => (
-            <div key={vacancy._id} className="vacancy-card">
-              <h3>{vacancy.role[`name_${currentLang}`]}</h3>
-              <h4 style={{ marginTop : "1em" }}>{vacancy[`title_${currentLang}`]}</h4> {/* Use dynamic title based on language */}
-              <p>{vacancy[`text_${currentLang}`]}</p> {/* Use dynamic text based on language */}
-              <div className="card-buttons">
-                <button onClick={() => openModal(vacancy)}>{t('edit')}</button> {/* Translated Edit button */}
-                <button onClick={() => handleDeleteVacancy(vacancy._id)}>{t('delete')}</button> {/* Translated Delete button */}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <Modal
-          isOpen={isModalOpen}
-          onRequestClose={closeModal}
-          contentLabel={editVacancy ? t('editVacancy') : t('addVacancy')} // Translated content label
-          className="modal"
-          overlayClassName="overlay"
-        >
-          <h2>{editVacancy ? t('editVacancy') : t('addVacancy')}</h2> {/* Modal title translation */}
-          
-          <select
-            value={editVacancy ? editVacancy.role : newVacancy.role}
-            onChange={(e) => handleInputChange(e, 'role')}
-          >
-            <option value="">{t('selectRole')}</option> {/* Translated placeholder */}
-            {roles.map(role => (
-              <option key={role._id} value={role._id}>
-                {currentLang == 'uz' ? role?.name_uz : currentLang == 'ru' ? role?.name_ru : role?.name_uz}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="text"
-            placeholder={t('titlePlaceholder') + '(English)'} // Translated placeholder
-            value={editVacancy ? editVacancy.title_en : newVacancy.title_en}
-            onChange={(e) => handleInputChange(e, 'title_en')}
-          />
-          <textarea
-            placeholder={t('textPlaceholder') + '(English)'} // Translated placeholder
-            value={editVacancy ? editVacancy.text_en : newVacancy.text_en}
-            onChange={(e) => handleInputChange(e, 'text_en')}
-          />
-          <input
-            type="text"
-            placeholder={t('titlePlaceholder') + '(Русский)'} // Translated placeholder
-            value={editVacancy ? editVacancy.title_ru : newVacancy.title_ru}
-            onChange={(e) => handleInputChange(e, 'title_ru')}
-          />
-          <textarea
-            placeholder={t('textPlaceholder') + '(Русский)'} // Translated placeholder
-            value={editVacancy ? editVacancy.text_ru : newVacancy.text_ru}
-            onChange={(e) => handleInputChange(e, 'text_ru')}
-          />
-          <input
-            type="text"
-            placeholder={t('titlePlaceholder') + '(Uzbek)'} // Translated placeholder
-            value={editVacancy ? editVacancy.title_uz : newVacancy.title_uz}
-            onChange={(e) => handleInputChange(e, 'title_uz')}
-          />
-          <textarea
-            placeholder={t('textPlaceholder') + '(Uzbek)'} // Translated placeholder
-            value={editVacancy ? editVacancy.text_uz : newVacancy.text_uz}
-            onChange={(e) => handleInputChange(e, 'text_uz')}
-          />
-          <button onClick={editVacancy ? handleUpdateVacancy : handleAddVacancy}>
-            {editVacancy ? t('editVacancy') : t('addVacancy')}
+          <div>
+            <h1>{t("vacancies")}</h1>
+            <p className="vacancies-subtitle">
+              {t("totalVacancies")}: <strong>{filteredVacancies.length}</strong>{" "}
+              {t("vacanciesCount")}
+            </p>
+          </div>
+          <button onClick={() => openModal()} className="add-vacancy-btn">
+            <FiPlus size={20} />
+            {t("addVacancy")}
           </button>
+        </div>
 
-          <button onClick={closeModal} className="close-modal">{t('cancel')}</button> {/* Translated cancel button */}
+        <div className="search-container">
+          <div className="search-wrapper">
+            <FiSearch size={20} className="search-icon" />
+            <input
+              type="text"
+              placeholder={t("searchVacancies")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                <FiX size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner-large"></div>
+            <p>{t("loading")}</p>
+          </div>
+        ) : filteredVacancies.length === 0 ? (
+          <div className="empty-state">
+            <FiBriefcase size={64} />
+            <h3>{searchQuery ? t("noSearchResults") : t("noVacancies")}</h3>
+            <p>{searchQuery ? t("noSearchResults") : t("noVacanciesDesc")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="vacancies-grid">
+              {currentVacancies.map((vacancy) => (
+                <div key={vacancy._id} className="vacancy-card">
+                  <div className="vacancy-icon">
+                    <FiBriefcase size={32} />
+                  </div>
+
+                  <div className="vacancy-content-card">
+                    <div className="vacancy-role">
+                      {currentLang === "en"
+                        ? vacancy.role?.name_en
+                        : currentLang === "ru"
+                        ? vacancy.role?.name_ru
+                        : vacancy.role?.name_uz}
+                    </div>
+
+                    <h3 className="vacancy-title">
+                      {currentLang === "en"
+                        ? vacancy.title_en
+                        : currentLang === "ru"
+                        ? vacancy.title_ru
+                        : vacancy.title_uz}
+                    </h3>
+
+                    <p className="vacancy-description">
+                      {currentLang === "en"
+                        ? vacancy.text_en
+                        : currentLang === "ru"
+                        ? vacancy.text_ru
+                        : vacancy.text_uz}
+                    </p>
+
+                    {vacancy.createdAt && (
+                      <div className="vacancy-meta">
+                        <FiCalendar size={14} />
+                        <span>{formatDate(vacancy.createdAt)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="vacancy-actions">
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => openModal(vacancy)}
+                      title={t("edit")}
+                    >
+                      <FiEdit2 size={16} />
+                      <span className="action-btn-text">{t("edit")}</span>
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDelete(vacancy._id)}
+                      title={t("delete")}
+                    >
+                      <FiTrash2 size={16} />
+                      <span className="action-btn-text">{t("delete")}</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {pageCount > 1 && (
+              <ReactPaginate
+                previousLabel={`← ${t("previous")}`}
+                nextLabel={`${t("next")} →`}
+                breakLabel="..."
+                pageCount={pageCount}
+                marginPagesDisplayed={2}
+                pageRangeDisplayed={3}
+                onPageChange={handlePageClick}
+                containerClassName="pagination"
+                activeClassName="active"
+                previousClassName="pagination-btn"
+                nextClassName="pagination-btn"
+                disabledClassName="disabled"
+                pageClassName="pagination-page"
+                forcePage={currentPage}
+              />
+            )}
+          </>
+        )}
+
+        <Modal isOpen={isModalOpen} onClose={closeModal} onSubmit={handleSubmit}>
+          <div className="modal-form">
+            <h2 className="modal-title">
+              {editingId ? t("editVacancy") : t("addVacancy")}
+            </h2>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("selectRole")}</h3>
+              <select
+                value={formData.role}
+                onChange={(e) => handleInputChange("role", e.target.value)}
+                className="form-select"
+                required
+              >
+                <option value="">{t("selectRole")}</option>
+                {roles.map((role) => (
+                  <option key={role._id} value={role._id}>
+                    {currentLang === "en"
+                      ? role.name_en
+                      : currentLang === "ru"
+                      ? role.name_ru
+                      : role.name_uz}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("uzbek")}</h3>
+              <input
+                type="text"
+                placeholder="Sarlavha (O'zbekcha)"
+                value={formData.title_uz}
+                onChange={(e) => handleInputChange("title_uz", e.target.value)}
+                className="form-input"
+                required
+              />
+              <textarea
+                placeholder="Tavsif (O'zbekcha)"
+                value={formData.text_uz}
+                onChange={(e) => handleInputChange("text_uz", e.target.value)}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("russian")}</h3>
+              <input
+                type="text"
+                placeholder="Заголовок (Русский)"
+                value={formData.title_ru}
+                onChange={(e) => handleInputChange("title_ru", e.target.value)}
+                className="form-input"
+                required
+              />
+              <textarea
+                placeholder="Описание (Русский)"
+                value={formData.text_ru}
+                onChange={(e) => handleInputChange("text_ru", e.target.value)}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("english")}</h3>
+              <input
+                type="text"
+                placeholder="Title (English)"
+                value={formData.title_en}
+                onChange={(e) => handleInputChange("title_en", e.target.value)}
+                className="form-input"
+                required
+              />
+              <textarea
+                placeholder="Description (English)"
+                value={formData.text_en}
+                onChange={(e) => handleInputChange("text_en", e.target.value)}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <button type="submit" className="submit-btn">
+              {editingId ? t("save") : t("addVacancy")}
+            </button>
+          </div>
         </Modal>
       </div>
     </div>

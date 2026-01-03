@@ -1,224 +1,491 @@
-/* General page container */
-.page-container {
-    display: flex;
-    height: 100vh;
-    font-family: 'Arial', sans-serif;
+/* Vacancies Page Layout */
+.vacancies-page {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.vacancies-content {
+  flex: 1;
+  margin-left: 280px;
+  padding: 40px;
+}
+
+/* Header */
+.vacancies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.vacancies-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 8px 0;
+}
+
+.vacancies-subtitle {
+  color: #718096;
+  font-size: 1rem;
+}
+
+.vacancies-subtitle strong {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.add-vacancy-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.add-vacancy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* Search Container */
+.search-container {
+  margin-bottom: 32px;
+}
+
+.search-wrapper {
+  position: relative;
+  max-width: 500px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 48px 12px 48px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #4a5568;
+}
+
+.clear-search-btn:hover {
+  background: #cbd5e0;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 20px;
+}
+
+.spinner-large {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
-  
-  /* Sidebar */
-  .sidebar {
-    width: 250px;
-    background-color: #2d2d2d;
-    color: white;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .sidebar h2 {
-    color: white;
-  }
-  
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: #a0aec0;
+  text-align: center;
+}
+
+.empty-state svg {
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  color: #2d3748;
+  font-size: 1.25rem;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  color: #718096;
+  margin: 0;
+}
+
+/* Vacancies Grid */
+.vacancies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+/* Vacancy Card */
+.vacancy-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vacancy-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+/* Vacancy Icon */
+.vacancy-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+/* Vacancy Content */
+.vacancy-content-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vacancy-role {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #ebf8ff;
+  color: #3182ce;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.vacancy-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vacancy-description {
+  color: #4a5568;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vacancy-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a0aec0;
+  font-size: 0.875rem;
+}
+
+/* Vacancy Actions */
+.vacancy-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.action-btn svg {
+  flex-shrink: 0;
+}
+
+.action-btn-text {
+  display: inline;
+}
+
+.edit-btn {
+  background: #ebf8ff;
+  color: #3182ce;
+  border: 1px solid #bee3f8;
+}
+
+.edit-btn:hover {
+  background: #3182ce;
+  color: white;
+  border-color: #3182ce;
+  transform: translateY(-1px);
+}
+
+.delete-btn {
+  background: #fff5f5;
+  color: #e53e3e;
+  border: 1px solid #feb2b2;
+}
+
+.delete-btn:hover {
+  background: #e53e3e;
+  color: white;
+  border-color: #e53e3e;
+  transform: translateY(-1px);
+}
+
+/* Modal Form */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.pagination li {
+  list-style: none;
+}
+
+.pagination-btn,
+.pagination-page {
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.pagination-btn:hover:not(.disabled),
+.pagination-page:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.pagination .active a {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.pagination .disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
   .vacancies-content {
-    flex: 1;
-    background-color: #f4f7fb;
-    padding: 20px;
-    margin-left: 20em;
-    overflow-y: auto;
+    margin-left: 0;
+    padding: 24px;
   }
-  
-  .vacancies-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .vacancies-header h1 {
-    font-size: 24px;
-    color: #333;
-  }
-  
-  .add-vacancy-button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-  }
-  
-  .add-vacancy-button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* Vacancies grid */
+
   .vacancies-grid {
-    display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
   }
-  
-  .vacancy-card {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    transition: transform 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .vacancies-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
-  
-  .vacancy-card:hover {
-    transform: translateY(-5px);
-  }
-  
-  .vacancy-card h3 {
-    font-size: 20px;
-    color: #333;
-  }
-  
-  .vacancy-card p {
-    color: #666;
-    font-size: 14px;
-    line-height: 1.6;
-  }
-  
-  .card-buttons {
-    margin-top: 20px;
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  .card-buttons button {
-    background-color: #28a745;
-    color: white;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-  
-  .card-buttons button:hover {
-    background-color: #218838;
-  }
-  
-  .card-buttons button:nth-child(2) {
-    background-color: #dc3545;
-  }
-  
-  .card-buttons button:nth-child(2):hover {
-    background-color: #c82333;
-  }
-  
-  /* Modal Styling */
-  .modal {
-    background-color: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    max-width: 600px;
-    margin: 50px auto;
-    position: relative;
-  }
-  
-  .modal h2 {
-    font-size: 24px;
-    color: #333;
-    margin-bottom: 20px;
-  }
-  
-  .modal input,
-  .modal textarea,
-  .modal select {
+
+  .add-vacancy-btn {
     width: 100%;
+  }
+
+  .vacancies-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-wrapper {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .action-btn-text {
+    display: none;
+  }
+
+  .action-btn {
+    min-width: 48px;
     padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 16px;
   }
-  
-  .modal textarea {
-    height: 50px;
-    resize: none;
+
+  .vacancy-actions {
+    flex-direction: column;
+    gap: 10px;
   }
-  
-  .modal button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-  }
-  
-  .modal button:hover {
-    background-color: #0056b3;
-  }
-  
-  .close-modal {
-    padding: 10px 20px;
-    background-color: #f1f1f1;
-    color: #333;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-  }
-  
-  .close-modal:hover {
-    background-color: #ddd;
-  }
-  
-  /* Modal overlay */
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
+
+  .action-btn {
     width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.3);
-    display: flex;
-    justify-content: center;
-    align-items: center;
   }
-  
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .vacancies-grid {
-      grid-template-columns: 1fr;
-    }
-  
-    .vacancies-header h1 {
-      font-size: 20px;
-    }
-  
-    .add-vacancy-button {
-      font-size: 14px;
-    }
-  
-    .vacancy-card {
-      padding: 15px;
-    }
-  
-    .card-buttons button {
-      font-size: 12px;
-    }
-  
-    .modal {
-      padding: 20px;
-      max-width: 500px;
-    }
-  
-    .modal h2 {
-      font-size: 20px;
-    }
-  
-    .modal button {
-      font-size: 14px;
-    }
+
+  .action-btn-text {
+    display: inline;
   }
-  
+}

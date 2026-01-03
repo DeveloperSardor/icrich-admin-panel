@@ -1,12 +1,21 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import Modal from "react-modal";
 import toast from "react-hot-toast";
 import ReactPaginate from "react-paginate";
-import Sidebar from "../../components/sidebar/Sidebar"; // Import the Sidebar component
-import "./style.css";
-import Context from "../../context/Context";
+import Sidebar from "../../components/sidebar/Sidebar";
+import Modal from "../../components/news-add/NewsAdd";
 import { useTranslation } from "react-i18next";
+import Context from "../../context/Context";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiImage,
+  FiCalendar,
+  FiSearch,
+  FiX
+} from "react-icons/fi";
+import "./style.css";
 
 const AnnouncementPage = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -15,6 +24,7 @@ const AnnouncementPage = () => {
   const { t } = useTranslation("global");
 
   const [announcementData, setAnnouncementData] = useState([]);
+  const [filteredAnnouncements, setFilteredAnnouncements] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [currentAnnouncement, setCurrentAnnouncement] = useState({
     title_en: "",
@@ -28,30 +38,57 @@ const AnnouncementPage = () => {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
   const [imageUploading, setImageUploading] = useState(false);
 
-  // Fetch announcements data
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/announcement`);
-        if (response.data.success) {
-          setAnnouncementData(response.data.data);
-        } else {
-          toast.error(t("fetchError"));
-        }
-      } catch (error) {
-        toast.error(t("fetchError"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchAnnouncements();
   }, []);
 
-  // Handle Add/Edit Announcement
+  // Search filter
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredAnnouncements(announcementData);
+    } else {
+      const filtered = announcementData.filter((ann) => {
+        const searchLower = searchQuery.toLowerCase();
+        
+        const titleMatch = 
+          ann.title_en?.toLowerCase().includes(searchLower) ||
+          ann.title_ru?.toLowerCase().includes(searchLower) ||
+          ann.title_uz?.toLowerCase().includes(searchLower);
+        
+        const descMatch = 
+          ann.desc_en?.toLowerCase().includes(searchLower) ||
+          ann.desc_ru?.toLowerCase().includes(searchLower) ||
+          ann.desc_uz?.toLowerCase().includes(searchLower);
+        
+        return titleMatch || descMatch;
+      });
+      
+      setFilteredAnnouncements(filtered);
+      setCurrentPage(0);
+    }
+  }, [searchQuery, announcementData]);
+
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BACKEND_URL}/api/announcement`);
+      if (response.data.success) {
+        setAnnouncementData(response.data.data);
+        setFilteredAnnouncements(response.data.data);
+      } else {
+        toast.error(t("fetchError"));
+      }
+    } catch (error) {
+      toast.error(t("fetchError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -65,13 +102,7 @@ const AnnouncementPage = () => {
 
       if (response.data.success) {
         toast.success(editing ? t("editSuccess") : t("addSuccess"));
-        const updatedData = editing
-          ? announcementData.map((ann) =>
-              ann._id === currentAnnouncement._id ? response.data.data : ann
-            )
-          : [response.data.data, ...announcementData];
-
-        setAnnouncementData(updatedData);
+        fetchAnnouncements();
         setModalOpen(false);
         resetForm();
       } else {
@@ -82,7 +113,6 @@ const AnnouncementPage = () => {
     }
   };
 
-  // Handle Image Upload to Cloudinary
   const handleImageUpload = async (file) => {
     setImageUploading(true);
     const formData = new FormData();
@@ -95,7 +125,10 @@ const AnnouncementPage = () => {
         "https://api.cloudinary.com/v1_1/roadsidecoder/image/upload",
         formData
       );
-      setCurrentAnnouncement((prev) => ({ ...prev, img: response.data.secure_url }));
+      setCurrentAnnouncement((prev) => ({ 
+        ...prev, 
+        img: response.data.secure_url 
+      }));
       toast.success(t("imageUploadSuccess"));
     } catch (error) {
       toast.error(t("imageUploadError"));
@@ -104,12 +137,11 @@ const AnnouncementPage = () => {
     }
   };
 
-  // Handle Page Click for Pagination
   const handlePageClick = ({ selected }) => {
     setCurrentPage(selected);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Reset form
   const resetForm = () => {
     setCurrentAnnouncement({
       title_en: "",
@@ -120,48 +152,17 @@ const AnnouncementPage = () => {
       desc_uz: "",
       img: "",
     });
+    setEditing(false);
   };
 
-  // Render Announcement Cards
-  const renderAnnouncements = () => {
-    const offset = currentPage * itemsPerPage;
-    const currentItems = announcementData.slice(offset, offset + itemsPerPage);
-
-    return (
-      <div className="announcement-container">
-        {currentItems.map((ann) => (
-          <div key={ann._id} className="announcement-card">
-            <h3>{ann[`title_${currentLang}`]}</h3>
-            <p>{ann[`desc_${currentLang}`]?.slice(0, 100)}...</p>
-            {ann.img && <img src={ann.img} alt="Announcement" />}
-            <div className="announcement-actions">
-              <button
-                className="edit__btn"
-                onClick={() => {
-                  setEditing(true);
-                  setCurrentAnnouncement(ann);
-                  setModalOpen(true);
-                }}
-              >
-                {t("edit")}
-              </button>
-              <button onClick={() => handleDeleteAnnouncement(ann._id)}>
-                {t("delete")}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Handle Delete Announcement
   const handleDeleteAnnouncement = async (id) => {
+    if (!window.confirm(t("confirmDelete"))) return;
+
     try {
       const response = await axios.delete(`${BACKEND_URL}/api/announcement/${id}`);
       if (response.data.success) {
-        setAnnouncementData(announcementData.filter((ann) => ann._id !== id));
         toast.success(t("deleteSuccess"));
+        fetchAnnouncements();
       } else {
         toast.error(t("deleteError"));
       }
@@ -170,83 +171,317 @@ const AnnouncementPage = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    
+    const monthsUz = [
+      'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+      'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
+    ];
+    
+    const monthsRu = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    
+    const monthsEn = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    const months = currentLang === 'ru' ? monthsRu : 
+                   currentLang === 'en' ? monthsEn : monthsUz;
+    
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day}-${month} ${year}`;
+  };
+
+  // Pagination
+  const pageCount = Math.ceil(filteredAnnouncements.length / itemsPerPage);
+  const offset = currentPage * itemsPerPage;
+  const currentAnnouncements = filteredAnnouncements.slice(offset, offset + itemsPerPage);
+
   return (
     <div className="announcement-page">
-      <div className="page-layout">
-        <Sidebar />
-
-        <div className="announcement-content">
-          <h1>{t("announcement")}</h1>
+      <Sidebar />
+      <div className="announcement-content">
+        <div className="announcement-header">
+          <div>
+            <h1>{t("announcement")}</h1>
+            <p className="announcement-subtitle">
+              {t("totalAnnouncements")}: <strong>{filteredAnnouncements.length}</strong> {t("announcementsCount")}
+            </p>
+          </div>
           <button
             onClick={() => {
               setEditing(false);
+              resetForm();
               setModalOpen(true);
             }}
-            style={{ marginLeft : "20em" }}
+            className="add-announcement-btn"
           >
+            <FiPlus size={20} />
             {t("addAnnouncement")}
           </button>
+        </div>
 
-          {loading ? <p>{t("loading")}</p> : renderAnnouncements()}
+        {/* Search Bar */}
+        <div className="search-container">
+          <div className="search-wrapper">
+            <FiSearch size={20} className="search-icon" />
+            <input
+              type="text"
+              placeholder={t("searchAnnouncements")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                <FiX size={18} />
+              </button>
+            )}
+          </div>
+        </div>
 
-          <ReactPaginate
-  previousLabel={`← ${t("previous")}`}
-  nextLabel={`${t("next")} →`}
-  breakLabel="..."
-  pageCount={Math.ceil(announcementData.length / itemsPerPage)}
-  marginPagesDisplayed={2}
-  pageRangeDisplayed={3}
-  onPageChange={handlePageClick}
-  containerClassName="pagination"
-  activeClassName="active"
-  previousClassName="pagination-previous"
-  nextClassName="pagination-next"
-  disabledClassName="disabled"
-/>
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner-large"></div>
+            <p>{t("loading")}</p>
+          </div>
+        ) : filteredAnnouncements.length === 0 ? (
+          <div className="empty-state">
+            <FiImage size={64} />
+            <h3>{searchQuery ? t("noSearchResults") : t("noAnnouncements")}</h3>
+            <p>{searchQuery ? t("noSearchResults") : t("noAnnouncementsDesc")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="announcement-grid">
+              {currentAnnouncements.map((ann) => (
+                <div key={ann._id} className="announcement-card">
+                  <div className="announcement-card-media">
+                    {ann.img ? (
+                      <img src={ann.img} alt="Announcement" />
+                    ) : (
+                      <div className="no-media">
+                        <FiImage size={48} />
+                      </div>
+                    )}
+                  </div>
 
+                  <div className="announcement-card-content">
+                    <h3 className="announcement-title">
+                      {ann[`title_${currentLang}`]}
+                    </h3>
+                    <p className="announcement-excerpt">
+                      {ann[`desc_${currentLang}`]?.slice(0, 150)}...
+                    </p>
 
-          {/* Modal for Add/Edit */}
-          <Modal isOpen={modalOpen} onRequestClose={() => setModalOpen(false)} contentLabel="Announcement Modal">
-            <h2 className="add_title">{editing ? t("edit") : t("addAnnouncement")}</h2>
-            <form className="modal__form" onSubmit={handleSubmit}>
-              {["en", "ru", "uz"].map((lang) => (
-                <div key={lang}>
-                  <input
-                    type="text"
-                    placeholder={`${t("titlePlaceholder")} (${lang.toUpperCase()})`}
-                    value={currentAnnouncement[`title_${lang}`]}
-                    onChange={(e) =>
-                      setCurrentAnnouncement({
-                        ...currentAnnouncement,
-                        [`title_${lang}`]: e.target.value,
-                      })
-                    }
-                  />
-                  <textarea
-                    placeholder={`${t("textPlaceholder")} (${lang.toUpperCase()})`}
-                    value={currentAnnouncement[`desc_${lang}`]}
-                    onChange={(e) =>
-                      setCurrentAnnouncement({
-                        ...currentAnnouncement,
-                        [`desc_${lang}`]: e.target.value,
-                      })
-                    }
-                  />
+                    {ann.createdAt && (
+                      <div className="announcement-meta">
+                        <FiCalendar size={14} />
+                        <span>{formatDate(ann.createdAt)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="announcement-card-actions">
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => {
+                        setEditing(true);
+                        setCurrentAnnouncement(ann);
+                        setModalOpen(true);
+                      }}
+                      title={t("edit")}
+                    >
+                      <FiEdit2 size={16} />
+                      <span className="action-btn-text">{t("edit")}</span>
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteAnnouncement(ann._id)}
+                      title={t("delete")}
+                    >
+                      <FiTrash2 size={16} />
+                      <span className="action-btn-text">{t("delete")}</span>
+                    </button>
+                  </div>
                 </div>
               ))}
-              <label>{t("image")}</label>
-              {imageUploading ? (
-                <p>{t("uploading")}</p>
-              ) : (
-                <input type="file" onChange={(e) => handleImageUpload(e.target.files[0])} />
-              )}
+            </div>
+
+            {/* Pagination */}
+            {pageCount > 1 && (
+              <ReactPaginate
+                previousLabel={`← ${t("previous")}`}
+                nextLabel={`${t("next")} →`}
+                breakLabel="..."
+                pageCount={pageCount}
+                marginPagesDisplayed={2}
+                pageRangeDisplayed={3}
+                onPageChange={handlePageClick}
+                containerClassName="pagination"
+                activeClassName="active"
+                previousClassName="pagination-btn"
+                nextClassName="pagination-btn"
+                disabledClassName="disabled"
+                pageClassName="pagination-page"
+                forcePage={currentPage}
+              />
+            )}
+          </>
+        )}
+
+        {/* Modal */}
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            resetForm();
+          }}
+          onSubmit={handleSubmit}
+        >
+          <div className="modal-form">
+            <h2 className="modal-title">
+              {editing ? t("editAnnouncement") : t("addAnnouncement")}
+            </h2>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("uzbek")}</h3>
+              <input
+                type="text"
+                value={currentAnnouncement.title_uz}
+                onChange={(e) =>
+                  setCurrentAnnouncement({
+                    ...currentAnnouncement,
+                    title_uz: e.target.value,
+                  })
+                }
+                placeholder={t("titleUz")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={currentAnnouncement.desc_uz}
+                onChange={(e) =>
+                  setCurrentAnnouncement({
+                    ...currentAnnouncement,
+                    desc_uz: e.target.value,
+                  })
+                }
+                placeholder={t("descUz")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("russian")}</h3>
+              <input
+                type="text"
+                value={currentAnnouncement.title_ru}
+                onChange={(e) =>
+                  setCurrentAnnouncement({
+                    ...currentAnnouncement,
+                    title_ru: e.target.value,
+                  })
+                }
+                placeholder={t("titleRu")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={currentAnnouncement.desc_ru}
+                onChange={(e) =>
+                  setCurrentAnnouncement({
+                    ...currentAnnouncement,
+                    desc_ru: e.target.value,
+                  })
+                }
+                placeholder={t("descRu")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("english")}</h3>
+              <input
+                type="text"
+                value={currentAnnouncement.title_en}
+                onChange={(e) =>
+                  setCurrentAnnouncement({
+                    ...currentAnnouncement,
+                    title_en: e.target.value,
+                  })
+                }
+                placeholder={t("titleEn")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={currentAnnouncement.desc_en}
+                onChange={(e) =>
+                  setCurrentAnnouncement({
+                    ...currentAnnouncement,
+                    desc_en: e.target.value,
+                  })
+                }
+                placeholder={t("descEn")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("image")}</h3>
+              <div className="file-input-wrapper">
+                <label className="file-input-label">
+                  <FiImage size={20} />
+                  <span>
+                    {imageUploading ? t("uploading") : t("uploadImage")}
+                  </span>
+                  <input
+                    type="file"
+                    onChange={(e) => handleImageUpload(e.target.files[0])}
+                    disabled={imageUploading}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
+
               {currentAnnouncement.img && !imageUploading && (
-                <img src={currentAnnouncement.img} alt="Announcement" height="100" width="120px" />
+                <div className="image-preview">
+                  <img src={currentAnnouncement.img} alt="Preview" />
+                  <button
+                    type="button"
+                    className="remove-image-btn"
+                    onClick={() =>
+                      setCurrentAnnouncement({ ...currentAnnouncement, img: "" })
+                    }
+                  >
+                    <FiX size={16} />
+                  </button>
+                </div>
               )}
-              <button type="submit">{editing ? t("edit") : t("addAnnouncement")}</button>
-            </form>
-          </Modal>
-        </div>
+            </div>
+
+            <button type="submit" className="submit-btn">
+              {editing ? t("edit") : t("addAnnouncement")}
+            </button>
+          </div>
+        </Modal>
       </div>
     </div>
   );

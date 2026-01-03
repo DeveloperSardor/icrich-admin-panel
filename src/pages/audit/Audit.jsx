@@ -1,194 +1,467 @@
-// Audit.jsx
-import { useContext, useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
+import ReactPaginate from "react-paginate";
 import Sidebar from "../../components/sidebar/Sidebar";
-import Modal from "react-modal";
+import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
-import { toast } from 'react-hot-toast';
+import { useTranslation } from "react-i18next";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiFileText,
+  FiSearch,
+  FiX,
+  FiExternalLink,
+  FiCalendar
+} from "react-icons/fi";
 import "./style.css";
 
 const Audit = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   const contextDatas = useContext(Context);
   const currentLang = contextDatas.currentLang;
-  const [t] = useTranslation("global");
+  const { t } = useTranslation("global");
 
   const [docs, setDocs] = useState([]);
+  const [filteredDocs, setFilteredDocs] = useState([]);
   const [formData, setFormData] = useState({
-    title_en: "", title_ru: "", title_uz: "",
-    desc_en: "", desc_ru: "", desc_uz: "",
-    pdf_link: ""
+    title_en: "",
+    title_ru: "",
+    title_uz: "",
+    desc_en: "",
+    desc_ru: "",
+    desc_uz: "",
+    pdf_link: "",
   });
-  const [editId, setEditId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const itemsPerPage = 6;
 
   useEffect(() => {
     fetchDocs();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredDocs(docs);
+    } else {
+      const filtered = docs.filter((doc) => {
+        const searchLower = searchQuery.toLowerCase();
+
+        const titleMatch =
+          doc.title_en?.toLowerCase().includes(searchLower) ||
+          doc.title_ru?.toLowerCase().includes(searchLower) ||
+          doc.title_uz?.toLowerCase().includes(searchLower);
+
+        const descMatch =
+          doc.desc_en?.toLowerCase().includes(searchLower) ||
+          doc.desc_ru?.toLowerCase().includes(searchLower) ||
+          doc.desc_uz?.toLowerCase().includes(searchLower);
+
+        return titleMatch || descMatch;
+      });
+
+      setFilteredDocs(filtered);
+      setCurrentPage(0);
+    }
+  }, [searchQuery, docs]);
+
   const fetchDocs = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${BACKEND_URL}/api/audit`);
-      setDocs(response.data.data);
-    } catch (error) {
-      console.error("Error fetching docs:", error);
-    }
-  };
-
-  const handleAddOrUpdateDoc = async () => {
-    try {
-      let response;
-      if (editId) {
-        response = await axios.put(`${BACKEND_URL}/api/audit/${editId}`, formData);
+      if (response.data.success) {
+        setDocs(response.data.data);
+        setFilteredDocs(response.data.data);
       } else {
-        response = await axios.post(`${BACKEND_URL}/api/audit`, formData);
-      }
-
-      if (response?.data?.success) {
-        if (editId) {
-          const updatedDocs = docs.map(doc => doc._id === editId ? response.data.data : doc);
-          setDocs(updatedDocs);
-          toast.success(currentLang === "uz" ? "Muvaffaqiyatli o'zgartirildi" : currentLang === "ru" ? "Успешно обновлено" : "Successfully updated");
-        } else {
-          setDocs([...docs, response.data.data]);
-          toast.success(currentLang === "uz" ? "Muvaffaqiyatli qo'shildi" : currentLang === "ru" ? "Успешно добавлено" : "Successfully added");
-        }
-      } else {
-        toast.error(currentLang === "uz" ? "Xatolik yuz berdi" : currentLang === "ru" ? "Произошла ошибка" : "An error occurred");
+        toast.error(t("fetchError"));
       }
     } catch (error) {
-      console.error("Error saving doc:", error);
-      toast.error(currentLang === "uz" ? "Xatolik yuz berdi" : currentLang === "ru" ? "Произошла ошибка" : "An error occurred");
+      console.error("Error fetching audits:", error);
+      toast.error(t("fetchError"));
     } finally {
-      closeModal();
+      setLoading(false);
     }
   };
 
-  const handleDeleteDoc = async (id) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     try {
-      await axios.delete(`${BACKEND_URL}/api/audit/${id}`);
-      setDocs(docs.filter(doc => doc._id !== id));
+      const url = editingId
+        ? `${BACKEND_URL}/api/audit/${editingId}`
+        : `${BACKEND_URL}/api/audit`;
+      const method = editingId ? "put" : "post";
+
+      const response = await axios[method](url, formData);
+
+      if (response.data.success) {
+        toast.success(editingId ? t("editSuccess") : t("addSuccess"));
+        fetchDocs();
+        closeModal();
+      } else {
+        toast.error(t("error"));
+      }
     } catch (error) {
-      console.error("Error deleting doc:", error);
+      console.error("Error submitting audit:", error);
+      toast.error(t("error"));
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm(t("confirmDelete"))) return;
+
+    try {
+      const response = await axios.delete(`${BACKEND_URL}/api/audit/${id}`);
+      if (response.data.success) {
+        toast.success(t("deleteSuccess"));
+        setDocs(docs.filter((doc) => doc._id !== id));
+      } else {
+        toast.error(t("deleteError"));
+      }
+    } catch (error) {
+      console.error("Error deleting audit:", error);
+      toast.error(t("deleteError"));
     }
   };
 
   const openModal = (doc = null) => {
-    if (doc) {
-      setFormData({
-        title_en: doc.title_en || "",
-        title_ru: doc.title_ru || "",
-        title_uz: doc.title_uz || "",
-        desc_en: doc.desc_en || "",
-        desc_ru: doc.desc_ru || "",
-        desc_uz: doc.desc_uz || "",
-        pdf_link: doc.pdf_link || ""
-      });
-      setEditId(doc._id);
-    } else {
-      setFormData({
-        title_en: "", title_ru: "", title_uz: "",
-        desc_en: "", desc_ru: "", desc_uz: "",
-        pdf_link: ""
-      });
-      setEditId(null);
-    }
+    setEditingId(doc ? doc._id : null);
+    setFormData(
+      doc
+        ? {
+            title_en: doc.title_en || "",
+            title_ru: doc.title_ru || "",
+            title_uz: doc.title_uz || "",
+            desc_en: doc.desc_en || "",
+            desc_ru: doc.desc_ru || "",
+            desc_uz: doc.desc_uz || "",
+            pdf_link: doc.pdf_link || "",
+          }
+        : {
+            title_en: "",
+            title_ru: "",
+            title_uz: "",
+            desc_en: "",
+            desc_ru: "",
+            desc_uz: "",
+            pdf_link: "",
+          }
+    );
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setEditingId(null);
     setFormData({
-      title_en: "", title_ru: "", title_uz: "",
-      desc_en: "", desc_ru: "", desc_uz: "",
-      pdf_link: ""
+      title_en: "",
+      title_ru: "",
+      title_uz: "",
+      desc_en: "",
+      desc_ru: "",
+      desc_uz: "",
+      pdf_link: "",
     });
-    setEditId(null);
   };
 
-  const handleInputChange = (e, field) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
   };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+
+    const monthsUz = [
+      "yanvar",
+      "fevral",
+      "mart",
+      "aprel",
+      "may",
+      "iyun",
+      "iyul",
+      "avgust",
+      "sentabr",
+      "oktabr",
+      "noyabr",
+      "dekabr",
+    ];
+
+    const monthsRu = [
+      "января",
+      "февраля",
+      "марта",
+      "апреля",
+      "мая",
+      "июня",
+      "июля",
+      "августа",
+      "сентября",
+      "октября",
+      "ноября",
+      "декабря",
+    ];
+
+    const monthsEn = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const months =
+      currentLang === "ru" ? monthsRu : currentLang === "en" ? monthsEn : monthsUz;
+
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    return `${day}-${month} ${year}`;
+  };
+
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const pageCount = Math.ceil(filteredDocs.length / itemsPerPage);
+  const offset = currentPage * itemsPerPage;
+  const currentDocs = filteredDocs.slice(offset, offset + itemsPerPage);
 
   return (
-    <div className="page-container" style={{ overflowY: 'auto', height: '100vh' }}>
+    <div className="audit-page">
       <Sidebar />
-      <div className="docs-content" style={{ padding: '20px', flexGrow: 1 }}>
-        <div className="docs-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1>{t("audit")}</h1>
-          <button className="add-doc-button" onClick={() => openModal()}>
+      <div className="audit-content">
+        <div className="audit-header">
+          <div>
+            <h1>{t("audit")}</h1>
+            <p className="audit-subtitle">
+              {t("totalAudits")}: <strong>{filteredDocs.length}</strong>{" "}
+              {t("auditsCount")}
+            </p>
+          </div>
+          <button onClick={() => openModal()} className="add-audit-btn">
+            <FiPlus size={20} />
             {t("addAudit")}
           </button>
         </div>
 
-        <div className="docs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-          {docs.map((doc) => (
-            <div key={doc?._id} className="doc-card" style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-              <h3>
-                {currentLang === "uz"
-                  ? doc?.title_uz
-                  : currentLang === "ru"
-                  ? doc?.title_ru
-                  : doc?.title_en}
-              </h3>
-              <p>
-                {currentLang === "uz"
-                  ? doc?.desc_uz
-                  : currentLang === "ru"
-                  ? doc?.desc_ru
-                  : doc?.desc_en}
-              </p>
-
-              {doc?.pdf_link && (
-                <a
-                  href={doc.pdf_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="pdf-link"
-                  style={{ color: '#007bff', textDecoration: 'underline', display: 'inline-block', marginTop: '10px' }}
-                >
-                  {t("viewPDF") || "View PDF"}
-                </a>
-              )}
-
-              <div className="card-buttons" style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
-                <button className="edit_btnn" onClick={() => openModal(doc)}>
-                  {t("edit")}
-                </button>
-                <button className="delete_btnn" onClick={() => handleDeleteDoc(doc?._id)}>
-                  {t("delete")}
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="search-container">
+          <div className="search-wrapper">
+            <FiSearch size={20} className="search-icon" />
+            <input
+              type="text"
+              placeholder={t("searchAudits")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                <FiX size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
-        <Modal
-          isOpen={isModalOpen}
-          onRequestClose={closeModal}
-          contentLabel={editId ? t("editDoc") : t("addAudit")}
-          className="modal"
-          overlayClassName="overlay"
-        >
-          <h2>{editId ? t("edit") : t("addDoc")}</h2>
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner-large"></div>
+            <p>{t("loading")}</p>
+          </div>
+        ) : filteredDocs.length === 0 ? (
+          <div className="empty-state">
+            <FiFileText size={64} />
+            <h3>{searchQuery ? t("noSearchResults") : t("noAudits")}</h3>
+            <p>{searchQuery ? t("noSearchResults") : t("noAuditsDesc")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="audit-grid">
+              {currentDocs.map((doc) => (
+                <div key={doc._id} className="audit-card">
+                  <div className="audit-icon">
+                    <FiFileText size={32} />
+                  </div>
 
-          <input type="text" placeholder={`${t("titlePlaceholder")} (English)`} value={formData.title_en} onChange={(e) => handleInputChange(e, "title_en")} />
-          <input type="text" placeholder={`${t("titlePlaceholder")} (Русский)`} value={formData.title_ru} onChange={(e) => handleInputChange(e, "title_ru")} />
-          <input type="text" placeholder={`${t("titlePlaceholder")} (Uzbek)`} value={formData.title_uz} onChange={(e) => handleInputChange(e, "title_uz")} />
+                  <div className="audit-content-card">
+                    <h3 className="audit-title">
+                      {currentLang === "en"
+                        ? doc.title_en
+                        : currentLang === "ru"
+                        ? doc.title_ru
+                        : doc.title_uz}
+                    </h3>
 
-          <input type="text" placeholder={`${t("textPlaceholder")} (English)`} value={formData.desc_en} onChange={(e) => handleInputChange(e, "desc_en")} />
-          <input type="text" placeholder={`${t("textPlaceholder")} (Русский)`} value={formData.desc_ru} onChange={(e) => handleInputChange(e, "desc_ru")} />
-          <input type="text" placeholder={`${t("textPlaceholder")} (Uzbek)`} value={formData.desc_uz} onChange={(e) => handleInputChange(e, "desc_uz")} />
+                    <p className="audit-description">
+                      {currentLang === "en"
+                        ? doc.desc_en
+                        : currentLang === "ru"
+                        ? doc.desc_ru
+                        : doc.desc_uz}
+                    </p>
 
-          <input type="text" placeholder={t("pdfLinkPlaceholder") || "PDF link"} value={formData.pdf_link} onChange={(e) => handleInputChange(e, "pdf_link")} />
+                    {doc.createdAt && (
+                      <div className="audit-meta">
+                        <FiCalendar size={14} />
+                        <span>{formatDate(doc.createdAt)}</span>
+                      </div>
+                    )}
 
-          <button onClick={handleAddOrUpdateDoc}>
-            {editId ? t("save") : t("addAudit")}
-          </button>
-          <button onClick={closeModal} className="close-modal">
-            {t("cancel")}
-          </button>
+                    {doc.pdf_link && (
+                      <a
+                        href={doc.pdf_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="audit-link"
+                      >
+                        <FiExternalLink size={16} />
+                        {t("viewPDF")}
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="audit-actions">
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => openModal(doc)}
+                      title={t("edit")}
+                    >
+                      <FiEdit2 size={16} />
+                      <span className="action-btn-text">{t("edit")}</span>
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDelete(doc._id)}
+                      title={t("delete")}
+                    >
+                      <FiTrash2 size={16} />
+                      <span className="action-btn-text">{t("delete")}</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {pageCount > 1 && (
+              <ReactPaginate
+                previousLabel={`← ${t("previous")}`}
+                nextLabel={`${t("next")} →`}
+                breakLabel="..."
+                pageCount={pageCount}
+                marginPagesDisplayed={2}
+                pageRangeDisplayed={3}
+                onPageChange={handlePageClick}
+                containerClassName="pagination"
+                activeClassName="active"
+                previousClassName="pagination-btn"
+                nextClassName="pagination-btn"
+                disabledClassName="disabled"
+                pageClassName="pagination-page"
+                forcePage={currentPage}
+              />
+            )}
+          </>
+        )}
+
+        <Modal isOpen={isModalOpen} onClose={closeModal} onSubmit={handleSubmit}>
+          <div className="modal-form">
+            <h2 className="modal-title">
+              {editingId ? t("editAudit") : t("addAudit")}
+            </h2>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("uzbek")}</h3>
+              <input
+                type="text"
+                placeholder="Sarlavha (O'zbekcha)"
+                value={formData.title_uz}
+                onChange={(e) => handleInputChange("title_uz", e.target.value)}
+                className="form-input"
+                required
+              />
+              <textarea
+                placeholder="Tavsif (O'zbekcha)"
+                value={formData.desc_uz}
+                onChange={(e) => handleInputChange("desc_uz", e.target.value)}
+                className="form-textarea"
+                rows="3"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("russian")}</h3>
+              <input
+                type="text"
+                placeholder="Заголовок (Русский)"
+                value={formData.title_ru}
+                onChange={(e) => handleInputChange("title_ru", e.target.value)}
+                className="form-input"
+                required
+              />
+              <textarea
+                placeholder="Описание (Русский)"
+                value={formData.desc_ru}
+                onChange={(e) => handleInputChange("desc_ru", e.target.value)}
+                className="form-textarea"
+                rows="3"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("english")}</h3>
+              <input
+                type="text"
+                placeholder="Title (English)"
+                value={formData.title_en}
+                onChange={(e) => handleInputChange("title_en", e.target.value)}
+                className="form-input"
+                required
+              />
+              <textarea
+                placeholder="Description (English)"
+                value={formData.desc_en}
+                onChange={(e) => handleInputChange("desc_en", e.target.value)}
+                className="form-textarea"
+                rows="3"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("pdfLinkPlaceholder")}</h3>
+              <input
+                type="url"
+                placeholder={t("pdfLinkPlaceholder")}
+                value={formData.pdf_link}
+                onChange={(e) => handleInputChange("pdf_link", e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+
+            <button type="submit" className="submit-btn">
+              {editingId ? t("save") : t("addAudit")}
+            </button>
+          </div>
         </Modal>
       </div>
     </div>

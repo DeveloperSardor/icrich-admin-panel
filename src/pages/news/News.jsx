@@ -4,8 +4,19 @@ import toast from "react-hot-toast";
 import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import Slider from "react-slick";
+import ReactPaginate from "react-paginate";
 import { useTranslation } from "react-i18next";
 import Context from "../../context/Context";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiYoutube,
+  FiImage,
+  FiCalendar,
+  FiSearch,
+  FiX
+} from "react-icons/fi";
 import "./style.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -17,6 +28,7 @@ const NewsPage = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const [newsData, setNewsData] = useState([]);
+  const [filteredNews, setFilteredNews] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -30,25 +42,82 @@ const NewsPage = () => {
     files: [],
   });
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [videoPreview, setVideoPreview] = useState("");
   const [youtubeError, setYoutubeError] = useState("");
+  
+  // Pagination & Search states
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const itemsPerPage = 6;
+
+  const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+  };
 
   useEffect(() => {
     fetchNews();
-  }, [currentLang]);
+  }, []);
+
+  // Search va filter logic
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredNews(newsData);
+    } else {
+      const filtered = newsData.filter((news) => {
+        const searchLower = searchQuery.toLowerCase();
+        
+        const titleMatch = 
+          news.title_en?.toLowerCase().includes(searchLower) ||
+          news.title_ru?.toLowerCase().includes(searchLower) ||
+          news.title_uz?.toLowerCase().includes(searchLower);
+        
+        const textMatch = 
+          news.text_en?.toLowerCase().includes(searchLower) ||
+          news.text_ru?.toLowerCase().includes(searchLower) ||
+          news.text_uz?.toLowerCase().includes(searchLower);
+        
+        return titleMatch || textMatch;
+      });
+      
+      setFilteredNews(filtered);
+      setCurrentPage(0); // Reset to first page
+    }
+  }, [searchQuery, newsData]);
 
   const fetchNews = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${BACKEND_URL}/api/news`);
+      
       if (res.data.success) {
         setNewsData(res.data.data);
+        setFilteredNews(res.data.data);
       } else {
         toast.error(t("fetchNewsError"));
       }
     } catch (error) {
+      console.error('Fetch error:', error);
       toast.error(t("fetchNewsError"));
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Pagination logic
+  const pageCount = Math.ceil(filteredNews.length / itemsPerPage);
+  const offset = currentPage * itemsPerPage;
+  const currentNews = filteredNews.slice(offset, offset + itemsPerPage);
+
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleModalClose = () => {
@@ -100,38 +169,42 @@ const NewsPage = () => {
   const renderYoutubeIframe = (url) => {
     const youtubePattern =
       /(?:https?:\/\/(?:www\.)?)?(?:youtube\.com\/(?:[^\/\n\s]+\/)*|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const videoId = url.match(youtubePattern)?.[1]; // ID'nı olish uchun index 1 ishlatiladi
+    const videoId = url.match(youtubePattern)?.[1];
     if (videoId) {
       return (
-        <iframe
-          width="100%"
-          height="315"
-          src={`https://www.youtube.com/embed/${videoId}`}
-          title="YouTube video"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        <div className="video-wrapper">
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title="YouTube video"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
       );
     }
     return null;
   };
 
   const renderUploadedFiles = () => {
-    return formData.files.map((file, index) => (
-      <div key={index} className="uploaded-file-item">
-        <img src={file.link} alt={`Uploaded file ${index}`} />
-        <button
-          className="delete-btn"
-          onClick={() => {
-            const updatedFiles = formData.files.filter((_, i) => i !== index);
-            setFormData({ ...formData, files: updatedFiles });
-          }}
-        >
-          X
-        </button>
+    return (
+      <div className="uploaded-files-grid">
+        {formData.files.map((file, index) => (
+          <div key={index} className="uploaded-file-item">
+            <img src={file.link} alt={`Upload ${index}`} />
+            <button
+              className="file-delete-btn"
+              onClick={() => {
+                const updatedFiles = formData.files.filter((_, i) => i !== index);
+                setFormData({ ...formData, files: updatedFiles });
+              }}
+            >
+              <FiX size={16} />
+            </button>
+          </div>
+        ))}
       </div>
-    ));
+    );
   };
 
   const handleFileChange = async (e) => {
@@ -178,8 +251,6 @@ const NewsPage = () => {
       return;
     }
 
-    setLoading(true);
-
     const payload = {
       title_en: formData.title_en,
       text_en: formData.text_en,
@@ -208,8 +279,6 @@ const NewsPage = () => {
       }
     } catch (error) {
       toast.error(t("errorAddingNews"));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -222,7 +291,7 @@ const NewsPage = () => {
       text_ru: news.text_ru,
       text_uz: news.text_uz,
       youtube_link: news.youtube_link,
-      files: news.files,
+      files: news.files || [],
       id: news._id,
     });
     setIsEditing(true);
@@ -230,6 +299,8 @@ const NewsPage = () => {
   };
 
   const handleDeleteNews = async (id) => {
+    if (!window.confirm(t("confirmDelete"))) return;
+
     try {
       const res = await axios.delete(`${BACKEND_URL}/api/news/${id}`);
       if (res.data.success) {
@@ -243,145 +314,294 @@ const NewsPage = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    
+    const monthsUz = [
+      'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+      'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
+    ];
+    
+    const monthsRu = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    
+    const monthsEn = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    const months = currentLang === 'ru' ? monthsRu : 
+                   currentLang === 'en' ? monthsEn : monthsUz;
+    
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day}-${month} ${year}`;
+  };
+
   return (
     <div className="news-page">
       <Sidebar />
       <div className="news-content">
-        <h1 className="news__title">{t("news")}</h1>
-        <button onClick={() => setModalOpen(true)} className="add-btn">
-          {t("addNews")}
-        </button>
-
-        <div className="news-cards">
-          {newsData.map((news) => (
-            <div className="news-card" key={news._id}>
-              <h2>
-                {currentLang === "en"
-                  ? news.title_en
-                  : currentLang === "ru"
-                  ? news.title_ru
-                  : news.title_uz}
-              </h2>
-              <p>
-                {currentLang === "en"
-                  ? news.text_en.slice(0, 100)
-                  : currentLang === "ru"
-                  ? news.text_ru.slice(0, 100)
-                  : news.text_uz.slice(0, 30)}
-                ...
-              </p>
-              {news.youtube_link && renderYoutubeIframe(news.youtube_link)}
-              {news.files?.length > 0 && (
-                <Slider>
-                  {news.files.map((file, index) => (
-                    <div key={index} className="slider-item">
-                      <img src={file.link} alt={`Slide ${index}`} />
-                    </div>
-                  ))}
-                </Slider>
-              )}
-
-              <div className="card-buttons">
-                <button
-                  className="edit-btn"
-                  onClick={() => openEditModal(news)}
-                >
-                  {t("edit")}
-                </button>
-                <button
-                  className="delete-btn"
-                  onClick={() => handleDeleteNews(news._id)}
-                >
-                  {t("delete")}
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="news-header">
+          <div>
+            <h1>{t("news")}</h1>
+            <p className="news-subtitle">
+              {t("total")}: <strong>{filteredNews.length}</strong> {t("newsCount")}
+            </p>
+          </div>
+          <button onClick={() => setModalOpen(true)} className="add-news-btn">
+            <FiPlus size={20} />
+            {t("addNews")}
+          </button>
         </div>
+
+        {/* Search Bar */}
+        <div className="search-container">
+          <div className="search-wrapper">
+            <FiSearch size={20} className="search-icon" />
+            <input
+              type="text"
+              placeholder={t("searchNews") || "Yangiliklarni qidirish..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                <FiX size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner-large"></div>
+            <p>{t("loading")}</p>
+          </div>
+        ) : filteredNews.length === 0 ? (
+          <div className="empty-state">
+            <FiImage size={64} />
+            <h3>{searchQuery ? t("noSearchResults") : t("noNews")}</h3>
+            <p>{searchQuery ? t("noSearchResults") : t("noNewsDesc")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="news-grid">
+              {currentNews.map((news) => (
+                <div className="news-card" key={news._id}>
+                  <div className="news-card-media">
+                    {news.youtube_link && renderYoutubeIframe(news.youtube_link)}
+                    {news.files?.length > 0 && !news.youtube_link && (
+                      <Slider {...sliderSettings}>
+                        {news.files.map((file, index) => (
+                          <div key={index} className="slider-item">
+                            <img src={file.link} alt={`Slide ${index}`} />
+                          </div>
+                        ))}
+                      </Slider>
+                    )}
+                    {!news.youtube_link && !news.files?.length && (
+                      <div className="no-media">
+                        <FiImage size={48} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="news-card-content">
+                    <h3 className="news-title">
+                      {currentLang === "en"
+                        ? news.title_en
+                        : currentLang === "ru"
+                        ? news.title_ru
+                        : news.title_uz}
+                    </h3>
+                    <p className="news-excerpt">
+                      {currentLang === "en"
+                        ? news.text_en?.slice(0, 150)
+                        : currentLang === "ru"
+                        ? news.text_ru?.slice(0, 150)
+                        : news.text_uz?.slice(0, 150)}
+                      ...
+                    </p>
+
+                    {news.createdAt && (
+                      <div className="news-meta">
+                        <FiCalendar size={14} />
+                        <span>{formatDate(news.createdAt)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="news-card-actions">
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => openEditModal(news)}
+                      title={t("edit")}
+                    >
+                      <FiEdit2 size={16} />
+                      <span className="action-btn-text">{t("edit")}</span>
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteNews(news._id)}
+                      title={t("delete")}
+                    >
+                      <FiTrash2 size={16} />
+                      <span className="action-btn-text">{t("delete")}</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {pageCount > 1 && (
+              <ReactPaginate
+                previousLabel={`← ${t("previous") || "Oldingi"}`}
+                nextLabel={`${t("next") || "Keyingi"} →`}
+                breakLabel="..."
+                pageCount={pageCount}
+                marginPagesDisplayed={2}
+                pageRangeDisplayed={3}
+                onPageChange={handlePageClick}
+                containerClassName="pagination"
+                activeClassName="active"
+                previousClassName="pagination-btn"
+                nextClassName="pagination-btn"
+                disabledClassName="disabled"
+                pageClassName="pagination-page"
+                forcePage={currentPage}
+              />
+            )}
+          </>
+        )}
 
         <Modal
           isOpen={modalOpen}
           onClose={handleModalClose}
           onSubmit={handleSubmit}
         >
-          <div className="form">
-            <input
-              type="text"
-              name="title_en"
-              value={formData.title_en}
-              onChange={(e) =>
-                setFormData({ ...formData, title_en: e.target.value })
-              }
-              placeholder={t("titlePlaceholder", { lang: "English" }) + " En"}
-              required
-            />
-            <textarea
-              name="text_en"
-              value={formData.text_en}
-              onChange={(e) =>
-                setFormData({ ...formData, text_en: e.target.value })
-              }
-              placeholder={t("textPlaceholder", { lang: "English" }) + " En"}
-              required
-            />
-            <input
-              type="text"
-              name="title_ru"
-              value={formData.title_ru}
-              onChange={(e) =>
-                setFormData({ ...formData, title_ru: e.target.value })
-              }
-              placeholder={t("titlePlaceholder", { lang: "Russian" }) + " Ру"}
-              required
-            />
-            <textarea
-              name="text_ru"
-              value={formData.text_ru}
-              onChange={(e) =>
-                setFormData({ ...formData, text_ru: e.target.value })
-              }
-              placeholder={t("textPlaceholder", { lang: "Russian" }) + " Ру"}
-              required
-            />
-            <input
-              type="text"
-              name="title_uz"
-              value={formData.title_uz}
-              onChange={(e) =>
-                setFormData({ ...formData, title_uz: e.target.value })
-              }
-              placeholder={t("titlePlaceholder", { lang: "Uzbek" }) + " Uz"}
-              required
-            />
-            <textarea
-              name="text_uz"
-              value={formData.text_uz}
-              onChange={(e) =>
-                setFormData({ ...formData, text_uz: e.target.value })
-              }
-              placeholder={t("textPlaceholder", { lang: "Uzbek" }) + " Uz"}
-              required
-            />
-            <input
-              type="text"
-              name="youtube_link"
-              value={formData.youtube_link}
-              onChange={handleYoutubeLinkChange}
-              placeholder={t("youtubeLink")}
-            />
-            {videoPreview && (
-              <div className="youtube-preview">
-                {renderYoutubeIframe(formData.youtube_link)}
+          <div className="modal-form">
+            <h2 className="modal-title">
+              {isEditing ? t("editNews") : t("addNews")}
+            </h2>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("uzbek")}</h3>
+              <input
+                type="text"
+                value={formData.title_uz}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_uz: e.target.value })
+                }
+                placeholder={t("titleUz")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={formData.text_uz}
+                onChange={(e) =>
+                  setFormData({ ...formData, text_uz: e.target.value })
+                }
+                placeholder={t("textUz")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("russian")}</h3>
+              <input
+                type="text"
+                value={formData.title_ru}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_ru: e.target.value })
+                }
+                placeholder={t("titleRu")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={formData.text_ru}
+                onChange={(e) =>
+                  setFormData({ ...formData, text_ru: e.target.value })
+                }
+                placeholder={t("textRu")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("english")}</h3>
+              <input
+                type="text"
+                value={formData.title_en}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_en: e.target.value })
+                }
+                placeholder={t("titleEn")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={formData.text_en}
+                onChange={(e) =>
+                  setFormData({ ...formData, text_en: e.target.value })
+                }
+                placeholder={t("textEn")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("media")}</h3>
+              <div className="media-input-group">
+                <FiYoutube size={20} />
+                <input
+                  type="text"
+                  value={formData.youtube_link}
+                  onChange={handleYoutubeLinkChange}
+                  placeholder={t("youtubeLink")}
+                  className="form-input"
+                />
               </div>
-            )}
-            {youtubeError && <p className="error">{youtubeError}</p>}
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              disabled={loadingFiles}
-            />
-            <div className="uploaded-files">{renderUploadedFiles()}</div>
+              {videoPreview && (
+                <div className="youtube-preview">
+                  {renderYoutubeIframe(formData.youtube_link)}
+                </div>
+              )}
+              {youtubeError && <p className="error-message">{youtubeError}</p>}
+
+              <div className="file-input-wrapper">
+                <label className="file-input-label">
+                  <FiImage size={20} />
+                  <span>{loadingFiles ? t("uploading") : t("uploadImages")}</span>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    disabled={loadingFiles}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
+
+              {formData.files.length > 0 && renderUploadedFiles()}
+            </div>
+
             <button
               type="submit"
               onClick={handleSubmit}

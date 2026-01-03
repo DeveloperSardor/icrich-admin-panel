@@ -1,31 +1,34 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import ReactPaginate from "react-paginate";
 import Sidebar from "../../components/sidebar/Sidebar";
-import Modal from "react-modal";
-import { useTranslation } from "react-i18next";
+import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
+import { useTranslation } from "react-i18next";
+import Slider from "react-slick";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiImage,
+  FiCalendar,
+  FiSearch,
+  FiX,
+  FiYoutube,
+} from "react-icons/fi";
 import "./style.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import Slider from "react-slick";
 
 const UneskoPage = () => {
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-  };
   const { t } = useTranslation("global");
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   const contextDatas = useContext(Context);
   const currentLang = contextDatas.currentLang;
 
   const [uneskoData, setUneskoData] = useState([]);
+  const [filteredUnesko, setFilteredUnesko] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,24 +42,67 @@ const UneskoPage = () => {
     images: [],
   });
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [videoPreview, setVideoPreview] = useState("");
   const [youtubeError, setYoutubeError] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const itemsPerPage = 6;
+
+  const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+  };
 
   useEffect(() => {
     fetchUnesko();
-  }, [currentLang]);
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredUnesko(uneskoData);
+    } else {
+      const filtered = uneskoData.filter((item) => {
+        const searchLower = searchQuery.toLowerCase();
+
+        const titleMatch =
+          item.title_en?.toLowerCase().includes(searchLower) ||
+          item.title_ru?.toLowerCase().includes(searchLower) ||
+          item.title_uz?.toLowerCase().includes(searchLower);
+
+        const textMatch =
+          item.text_en?.toLowerCase().includes(searchLower) ||
+          item.text_ru?.toLowerCase().includes(searchLower) ||
+          item.text_uz?.toLowerCase().includes(searchLower);
+
+        return titleMatch || textMatch;
+      });
+
+      setFilteredUnesko(filtered);
+      setCurrentPage(0);
+    }
+  }, [searchQuery, uneskoData]);
 
   const fetchUnesko = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${BACKEND_URL}/api/unesko`);
       if (res.data.success) {
         setUneskoData(res.data.data);
+        setFilteredUnesko(res.data.data);
       } else {
         toast.error(t("fetchUneskoError"));
       }
     } catch (error) {
+      console.error("Error fetching UNESCO:", error);
       toast.error(t("fetchUneskoError"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,6 +131,23 @@ const UneskoPage = () => {
     const youtubePattern =
       /^(https?:\/\/)?(www\.youtube\.com\/(?:[^\/\n\s]+\/)*|youtu\.be\/)([a-zA-Z0-9_-]{11})$/;
     return youtubePattern.test(url);
+  };
+
+  const getYouTubeVideoId = (url) => {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname === "youtu.be") {
+        return urlObj.pathname.slice(1);
+      } else if (
+        urlObj.hostname === "www.youtube.com" ||
+        urlObj.hostname === "youtube.com"
+      ) {
+        return urlObj.searchParams.get("v");
+      }
+    } catch (error) {
+      console.error("Invalid YouTube URL:", error);
+    }
+    return null;
   };
 
   const handleYoutubeLinkChange = (e) => {
@@ -135,6 +198,12 @@ const UneskoPage = () => {
     setLoadingFiles(false);
   };
 
+  const handleRemoveFile = (index) => {
+    const updatedImages = [...formData.images];
+    updatedImages.splice(index, 1);
+    setFormData({ ...formData, images: updatedImages });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -148,24 +217,22 @@ const UneskoPage = () => {
       return;
     }
 
-    setLoading(true);
-
-    const payload = {
-      title_en: formData.title_en,
-      text_en: formData.text_en,
-      title_ru: formData.title_ru,
-      text_ru: formData.text_ru,
-      title_uz: formData.title_uz,
-      text_uz: formData.text_uz,
-      youtube_link: formData.youtube_link,
-      images: formData.images.map((file) => file),
-    };
-
     try {
       const url = isEditing
         ? `${BACKEND_URL}/api/unesko/${formData.id}`
         : `${BACKEND_URL}/api/unesko`;
       const method = isEditing ? "put" : "post";
+
+      const payload = {
+        title_en: formData.title_en,
+        text_en: formData.text_en,
+        title_ru: formData.title_ru,
+        text_ru: formData.text_ru,
+        title_uz: formData.title_uz,
+        text_uz: formData.text_uz,
+        youtube_link: formData.youtube_link,
+        images: formData.images,
+      };
 
       const res = await axios[method](url, payload);
 
@@ -177,9 +244,8 @@ const UneskoPage = () => {
         toast.error(t("errorAddingUnesko"));
       }
     } catch (error) {
+      console.error("Error submitting UNESCO:", error);
       toast.error(t("errorAddingUnesko"));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -191,7 +257,7 @@ const UneskoPage = () => {
       text_en: unesko.text_en,
       text_ru: unesko.text_ru,
       text_uz: unesko.text_uz,
-      youtube_link: unesko.youtube_link,
+      youtube_link: unesko.youtube_link || "",
       images: unesko.images || [],
       id: unesko._id,
     });
@@ -200,221 +266,386 @@ const UneskoPage = () => {
   };
 
   const handleDeleteUnesko = async (id) => {
+    if (!window.confirm(t("confirmDelete"))) return;
+
     try {
       const res = await axios.delete(`${BACKEND_URL}/api/unesko/${id}`);
       if (res.data.success) {
-        toast.success(t("newsDeleted"));
+        toast.success(t("uneskoDeleted"));
         fetchUnesko();
       } else {
-        toast.error(t("errorDeletingNews"));
+        toast.error(t("deleteError"));
       }
     } catch (error) {
-      toast.error(t("errorDeletingNews"));
+      console.error("Error deleting UNESCO:", error);
+      toast.error(t("deleteError"));
     }
   };
 
-  const renderUploadedFiles = () => {
-    if (!formData.images || formData.images.length === 0) return null;
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
 
-    return (
-      <div className="uploaded-files">
-        {formData.images.map((file, index) => (
-          <div key={index} className="uploaded-file">
-            <img src={file} alt={`Uploaded ${index}`} />
-            <button
-              type="button"
-              onClick={() => handleRemoveFile(index)}
-              className="remove-btn"
-            >
-              {t("remove")}
-            </button>
-          </div>
-        ))}
-      </div>
-    );
+    const monthsUz = [
+      "yanvar",
+      "fevral",
+      "mart",
+      "aprel",
+      "may",
+      "iyun",
+      "iyul",
+      "avgust",
+      "sentabr",
+      "oktabr",
+      "noyabr",
+      "dekabr",
+    ];
+
+    const monthsRu = [
+      "января",
+      "февраля",
+      "марта",
+      "апреля",
+      "мая",
+      "июня",
+      "июля",
+      "августа",
+      "сентября",
+      "октября",
+      "ноября",
+      "декабря",
+    ];
+
+    const monthsEn = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const months =
+      currentLang === "ru" ? monthsRu : currentLang === "en" ? monthsEn : monthsUz;
+
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    return `${day}-${month} ${year}`;
   };
 
-  const getYouTubeVideoId = (url) => {
-    try {
-      // URL'dagi video ID ni olish
-      const urlObj = new URL(url);
-      if (urlObj.hostname === "youtu.be") {
-        // Agar URL youtu.be formatida bo'lsa
-        return urlObj.pathname.slice(1); // `/videoId` dan videoId'ni oladi
-      } else if (
-        urlObj.hostname === "www.youtube.com" ||
-        urlObj.hostname === "youtube.com"
-      ) {
-        // Agar URL www.youtube.com formatida bo'lsa
-        return urlObj.searchParams.get("v");
-      }
-    } catch (error) {
-      console.error("Invalid YouTube URL:", error);
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const renderYoutubeIframe = (url) => {
+    const videoId = getYouTubeVideoId(url);
+    if (videoId) {
+      return (
+        <div className="video-wrapper">
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title="YouTube video"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
     }
-    return null; // Agar noto'g'ri URL bo'lsa, null qaytaradi
+    return null;
   };
 
-  const handleRemoveFile = (index) => {
-    const updatedImages = [...formData.images];
-    updatedImages.splice(index, 1);
-    setFormData({ ...formData, images: updatedImages });
-  };
+  const pageCount = Math.ceil(filteredUnesko.length / itemsPerPage);
+  const offset = currentPage * itemsPerPage;
+  const currentUnesko = filteredUnesko.slice(offset, offset + itemsPerPage);
 
   return (
     <div className="unesko-page">
       <Sidebar />
       <div className="unesko-content">
-        <h1 className="unesko__title">{t("unesko")}</h1>
-        <button onClick={() => setModalOpen(true)} className="add-btn">
-          {t("add")}
-        </button>
-        <div className="news-cards">
-          {uneskoData.map((unesko) => (
-            <div className="news-card" key={unesko._id}>
-              <h2>
-                {currentLang === "en"
-                  ? unesko.title_en
-                  : currentLang === "ru"
-                  ? unesko.title_ru
-                  : unesko.title_uz}
-              </h2>
-              <p>
-                {currentLang === "en"
-                  ? unesko.text_en.slice(0, 100)
-                  : currentLang === "ru"
-                  ? unesko.text_ru.slice(0, 100)
-                  : unesko.text_uz.slice(0, 30)}
-                ...
-              </p>
-              {unesko.youtube_link && (
-                <iframe
-                  width="300px"
-                  height="315"
-                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(
-                    unesko?.youtube_link
-                  )}`}
-                  title="YouTube preview"
-                  frameBorder="0"
-                  allowFullScreen
+        <div className="unesko-header">
+          <div>
+            <h1>{t("unesko")}</h1>
+            <p className="unesko-subtitle">
+              {t("totalUnesko")}: <strong>{filteredUnesko.length}</strong>{" "}
+              {t("uneskoCount")}
+            </p>
+          </div>
+          <button onClick={() => setModalOpen(true)} className="add-unesko-btn">
+            <FiPlus size={20} />
+            {t("addUnesko")}
+          </button>
+        </div>
+
+        <div className="search-container">
+          <div className="search-wrapper">
+            <FiSearch size={20} className="search-icon" />
+            <input
+              type="text"
+              placeholder={t("searchUnesko")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button
+                className="clear-search-btn"
+                onClick={() => setSearchQuery("")}
+              >
+                <FiX size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner-large"></div>
+            <p>{t("loading")}</p>
+          </div>
+        ) : filteredUnesko.length === 0 ? (
+          <div className="empty-state">
+            <FiImage size={64} />
+            <h3>{searchQuery ? t("noSearchResults") : t("noUnesko")}</h3>
+            <p>{searchQuery ? t("noSearchResults") : t("noUneskoDesc")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="unesko-grid">
+              {currentUnesko.map((unesko) => (
+                <div className="unesko-card" key={unesko._id}>
+                  <div className="unesko-card-media">
+                    {unesko.youtube_link && renderYoutubeIframe(unesko.youtube_link)}
+                    {unesko.images?.length > 0 && !unesko.youtube_link && (
+                      <Slider {...sliderSettings}>
+                        {unesko.images.map((file, index) => (
+                          <div key={index} className="slider-item">
+                            <img src={file} alt={`Slide ${index}`} />
+                          </div>
+                        ))}
+                      </Slider>
+                    )}
+                    {!unesko.youtube_link && !unesko.images?.length && (
+                      <div className="no-media">
+                        <FiImage size={48} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="unesko-card-content">
+                    <h3 className="unesko-title">
+                      {currentLang === "en"
+                        ? unesko.title_en
+                        : currentLang === "ru"
+                        ? unesko.title_ru
+                        : unesko.title_uz}
+                    </h3>
+                    <p className="unesko-excerpt">
+                      {currentLang === "en"
+                        ? unesko.text_en?.slice(0, 150)
+                        : currentLang === "ru"
+                        ? unesko.text_ru?.slice(0, 150)
+                        : unesko.text_uz?.slice(0, 150)}
+                      ...
+                    </p>
+
+                    {unesko.createdAt && (
+                      <div className="unesko-meta">
+                        <FiCalendar size={14} />
+                        <span>{formatDate(unesko.createdAt)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="unesko-card-actions">
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => openEditModal(unesko)}
+                      title={t("edit")}
+                    >
+                      <FiEdit2 size={16} />
+                      <span className="action-btn-text">{t("edit")}</span>
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteUnesko(unesko._id)}
+                      title={t("delete")}
+                    >
+                      <FiTrash2 size={16} />
+                      <span className="action-btn-text">{t("delete")}</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {pageCount > 1 && (
+              <ReactPaginate
+                previousLabel={`← ${t("previous")}`}
+                nextLabel={`${t("next")} →`}
+                breakLabel="..."
+                pageCount={pageCount}
+                marginPagesDisplayed={2}
+                pageRangeDisplayed={3}
+                onPageChange={handlePageClick}
+                containerClassName="pagination"
+                activeClassName="active"
+                previousClassName="pagination-btn"
+                nextClassName="pagination-btn"
+                disabledClassName="disabled"
+                pageClassName="pagination-page"
+                forcePage={currentPage}
+              />
+            )}
+          </>
+        )}
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={handleModalClose}
+          onSubmit={handleSubmit}
+        >
+          <div className="modal-form">
+            <h2 className="modal-title">
+              {isEditing ? t("editUnesko") : t("addUnesko")}
+            </h2>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("uzbek")}</h3>
+              <input
+                type="text"
+                value={formData.title_uz}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_uz: e.target.value })
+                }
+                placeholder={t("titleUz")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={formData.text_uz}
+                onChange={(e) =>
+                  setFormData({ ...formData, text_uz: e.target.value })
+                }
+                placeholder={t("textUz")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("russian")}</h3>
+              <input
+                type="text"
+                value={formData.title_ru}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_ru: e.target.value })
+                }
+                placeholder={t("titleRu")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={formData.text_ru}
+                onChange={(e) =>
+                  setFormData({ ...formData, text_ru: e.target.value })
+                }
+                placeholder={t("textRu")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("english")}</h3>
+              <input
+                type="text"
+                value={formData.title_en}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_en: e.target.value })
+                }
+                placeholder={t("titleEn")}
+                className="form-input"
+                required
+              />
+              <textarea
+                value={formData.text_en}
+                onChange={(e) =>
+                  setFormData({ ...formData, text_en: e.target.value })
+                }
+                placeholder={t("textEn")}
+                className="form-textarea"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("media")}</h3>
+              <div className="media-input-group">
+                <FiYoutube size={20} />
+                <input
+                  type="text"
+                  value={formData.youtube_link}
+                  onChange={handleYoutubeLinkChange}
+                  placeholder={t("youtubeLink")}
+                  className="form-input"
                 />
+              </div>
+              {videoPreview && (
+                <div className="youtube-preview">
+                  {renderYoutubeIframe(formData.youtube_link)}
+                </div>
               )}
-              {unesko.images?.length > 0 && (
-                <Slider {...settings}>
-                  {unesko.images.map((file, index) => (
-                    <div key={index}>
-                      <img
-                        src={file}
-                        style={{ width: "200px", margin: "0.5em auto" }}
-                        alt={`Slide ${index}`}
-                      />
+              {youtubeError && <p className="error-message">{youtubeError}</p>}
+
+              <div className="file-input-wrapper">
+                <label className="file-input-label">
+                  <FiImage size={20} />
+                  <span>{loadingFiles ? t("uploading") : t("uploadImages")}</span>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    disabled={loadingFiles}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
+
+              {formData.images.length > 0 && (
+                <div className="uploaded-files-grid">
+                  {formData.images.map((file, index) => (
+                    <div key={index} className="uploaded-file-item">
+                      <img src={file} alt={`Upload ${index}`} />
+                      <button
+                        className="file-delete-btn"
+                        onClick={() => handleRemoveFile(index)}
+                      >
+                        <FiX size={16} />
+                      </button>
                     </div>
                   ))}
-                </Slider>
+                </div>
               )}
-              <button
-                onClick={() => openEditModal(unesko)}
-                className="edit-btn"
-              >
-                {t("edit")}
-              </button>
-              <button
-                onClick={() => handleDeleteUnesko(unesko._id)}
-                className="delete-btn"
-              >
-                {t("delete")}
-              </button>
             </div>
-          ))}
-        </div>
+
+            <button type="submit" className="submit-btn" disabled={loadingFiles}>
+              {isEditing ? t("save") : t("addUnesko")}
+            </button>
+          </div>
+        </Modal>
       </div>
-
-      <Modal
-        isOpen={modalOpen}
-        onRequestClose={handleModalClose}
-        className="unesko-modal"
-      >
-        <h2>{isEditing ? t("edit") : t("add")}</h2>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={formData.title_en}
-            placeholder={t("titlePlaceholder", { lang: "English" }) + " En"}
-            onChange={(e) =>
-              setFormData({ ...formData, title_en: e.target.value })
-            }
-          />
-          <textarea
-            value={formData.text_en}
-            placeholder={t("textPlaceholder", { lang: "English" }) + " En"}
-            onChange={(e) =>
-              setFormData({ ...formData, text_en: e.target.value })
-            }
-          ></textarea>
-          <input
-            type="text"
-            placeholder={t("titlePlaceholder", { lang: "Russian" }) + " Ру"}
-            value={formData.title_ru}
-            onChange={(e) =>
-              setFormData({ ...formData, title_ru: e.target.value })
-            }
-          />
-          <textarea
-            value={formData.text_ru}
-            placeholder={t("textPlaceholder", { lang: "Russian" }) + " Ру"}
-            onChange={(e) =>
-              setFormData({ ...formData, text_ru: e.target.value })
-            }
-          ></textarea>
-          <input
-            type="text"
-            placeholder={t("titlePlaceholder", { lang: "Uzbek" }) + " Uz"}
-            value={formData.title_uz}
-            onChange={(e) =>
-              setFormData({ ...formData, title_uz: e.target.value })
-            }
-          />
-          <textarea
-            value={formData.text_uz}
-            placeholder={t("textPlaceholder", { lang: "Uzbek" }) + " Uz"}
-            onChange={(e) =>
-              setFormData({ ...formData, text_uz: e.target.value })
-            }
-          ></textarea>
-
-          <label>{t("youtubeLink")}</label>
-          <input
-            type="text"
-            value={formData.youtube_link}
-            placeholder={t("youtubePlaceholder")}
-            onChange={handleYoutubeLinkChange}
-          />
-          {youtubeError && <p className="error-text">{youtubeError}</p>}
-          {videoPreview && (
-            <iframe
-              width="300px"
-              height="315"
-              src={`https://www.youtube.com/embed/${getYouTubeVideoId(
-                videoPreview
-              )}`}
-              title="YouTube preview"
-              frameBorder="0"
-              allowFullScreen
-            />
-          )}
-
-          <label>{t("uploadFiles")}</label>
-          <input type="file" multiple onChange={handleFileChange} />
-          {loadingFiles && <p>{t("uploading")}</p>}
-          {renderUploadedFiles()}
-
-          <button type="submit" disabled={loading}>
-            {loading ? t("saving") : isEditing ? t("edit") : t("add")}
-          </button>
-          <button type="button" onClick={handleModalClose}>
-            {t("cancel")}
-          </button>
-        </form>
-      </Modal>
     </div>
   );
 };
