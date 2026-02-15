@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
   Search, Plus, Edit2, Trash2, X, Upload, Check, AlertCircle,
-  Users, Calendar, Mail, Phone, Briefcase, Award, Clock, Eye, Filter
+  Users, Calendar, Mail, Phone, Briefcase, Award, Clock, Filter
 } from 'lucide-react';
 import Context from '../../context/Context';
 import { useTranslation } from 'react-i18next';
 import Sidebar from '../../components/sidebar/Sidebar';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import './style.css';
 
 const LeadershipAdmin = () => {
@@ -45,6 +47,26 @@ const LeadershipAdmin = () => {
     order: 0,
     isActive: true
   });
+
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
 
   const daysOptions = [
     { value: 'monday', label: { uz: 'Dushanba', ru: 'Понедельник', en: 'Monday' } },
@@ -278,6 +300,14 @@ const LeadershipAdmin = () => {
     active: leaders.filter(l => l.isActive).length
   };
 
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <Sidebar />
@@ -327,7 +357,7 @@ const LeadershipAdmin = () => {
                   {t('leadership.title')}
                 </h1>
                 <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
-                  {t('leadership.subtitle')}  
+                  {t('leadership.subtitle')}
                 </p>
               </div>
             </div>
@@ -563,6 +593,17 @@ const LeadershipAdmin = () => {
                     {leader.position?.[currentLang] || 'No position'}
                   </p>
 
+                  {leader.bio?.[currentLang] && (
+                    <p style={{
+                      fontSize: '0.875rem',
+                      color: '#64748b',
+                      marginBottom: '0.75rem',
+                      lineHeight: '1.5'
+                    }}>
+                      {truncateHtmlText(leader.bio[currentLang], 100)}
+                    </p>
+                  )}
+
                   {leader.academicDegree && (
                     <div style={{
                       display: 'flex',
@@ -701,44 +742,56 @@ const LeadershipAdmin = () => {
         )}
       </div>
 
+      {/* MODAL - Kengaytirilgan va Yaxshilangan */}
       {isModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.7)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2rem',
-          animation: 'fadeIn 0.2s ease-out'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '1rem',
-            maxWidth: '60rem',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'hidden', RetrySContinueboxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            animation: 'slideUp 0.3s ease-out'
-          }}>
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backdropFilter: 'blur(4px)',
+    zIndex: 1000,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '2rem',
+    animation: 'fadeIn 0.2s ease-out',
+    overflowY: 'auto'
+  }}
+  onClick={closeModal}
+  >
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '1rem',
+      maxWidth: '65rem', // 90rem dan 65rem ga kichiklashtirildi
+      width: '100%',
+      maxHeight: '90vh',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      animation: 'slideUp 0.3s ease-out'
+    }}
+    onClick={(e) => e.stopPropagation()}
+    >
+            {/* Modal Header */}
             <div style={{
-              position: 'sticky',
-              top: 0,
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white',
               padding: '1.5rem 2rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              zIndex: 10
+              borderTopLeftRadius: '1rem',
+              borderTopRightRadius: '1rem'
             }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
                 {editingId ? t('leadership.edit') : t('leadership.addNew')}
               </h2>
               <button
                 onClick={closeModal}
+                type="button"
                 style={{
                   background: 'rgba(255,255,255,0.2)',
                   border: 'none',
@@ -746,7 +799,10 @@ const LeadershipAdmin = () => {
                   cursor: 'pointer',
                   color: 'white',
                   padding: '0.5rem',
-                  transition: 'background 0.2s'
+                  transition: 'background 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
                 onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
                 onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
@@ -754,13 +810,21 @@ const LeadershipAdmin = () => {
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} style={{ padding: '2rem', overflowY: 'auto', maxHeight: 'calc(90vh - 180px)' }}>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              overflow: 'hidden'
+            }}>
+              {/* Tabs */}
               <div style={{
                 display: 'flex',
                 gap: '0.5rem',
-                marginBottom: '2rem',
+                padding: '1rem 2rem 0',
                 borderBottom: '2px solid #f1f5f9',
-                paddingBottom: '0.5rem'
+                backgroundColor: '#fafafa'
               }}>
                 {['basic', 'contact', 'schedule', 'other'].map(tab => (
                   <button
@@ -787,283 +851,16 @@ const LeadershipAdmin = () => {
                 ))}
               </div>
 
-              {activeTab === 'basic' && (
-                <div>
-                  <div style={{ marginBottom: '2rem' }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      {t('leadership.form.roleLabel')} *
-                    </label>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                      {roleOptions.map(role => (
-                        <label key={role.value} style={{
-                          flex: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '1rem',
-                          border: formData.role === role.value ? '2px solid #667eea' : '2px solid #e2e8f0',
-                          borderRadius: '0.75rem',
-                          cursor: 'pointer',
-                          backgroundColor: formData.role === role.value ? '#f0f9ff' : 'white',
-                          transition: 'all 0.2s'
-                        }}>
-                          <input
-                            type="radio"
-                            name="role"
-                            value={role.value}
-                            checked={formData.role === role.value}
-                            onChange={(e) => setFormData(prev => ({
-                              ...prev,
-                              role: e.target.value,
-                              departmentId: e.target.value === 'leadership' ? '' : prev.departmentId
-                            }))}
-                            style={{ width: '1.25rem', height: '1.25rem' }}
-                          />
-                          <span style={{ fontSize: '1.5rem' }}>{role.icon}</span>
-                          <span style={{ fontWeight: '600', color: '#0f172a' }}>
-                            {role.label[currentLang]}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '2rem' }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      {t('leadership.form.imageLabel')} *
-                    </label>
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                      {formData.img && (
-                        <div style={{ position: 'relative' }}>
-                          <img
-                            src={formData.img}
-                            alt="Preview"
-                            style={{
-                              width: '10rem',
-                              height: '10rem',
-                              objectFit: 'cover',
-                              borderRadius: '0.75rem',
-                              border: '2px solid #e2e8f0'
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, img: '' }))}
-                            style={{
-                              position: 'absolute',
-                              top: '-0.5rem',
-                              right: '-0.5rem',
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '50%',
-                              width: '2rem',
-                              height: '2rem',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      )}
-                      <label style={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: '10rem',
-                        border: '2px dashed #cbd5e1',
-                        borderRadius: '0.75rem',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        backgroundColor: '#f8fafc'
-                      }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#667eea';
-                          e.currentTarget.style.backgroundColor = '#f0f9ff';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = '#cbd5e1';
-                          e.currentTarget.style.backgroundColor = '#f8fafc';
-                        }}
-                      >
-                        <Upload style={{ color: '#94a3b8', marginBottom: '0.75rem' }} size={40} />
-                        <span style={{ fontSize: '0.95rem', color: '#475569', fontWeight: '500' }}>
-                          {t('leadership.form.imageUpload')}
-                        </span>
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-                          {t('leadership.form.imageFormat')}
-                        </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          style={{ display: 'none' }}
-                        />
-                      </label>
-                    </div>
-                    {uploadProgress > 0 && (
-                      <div style={{
-                        marginTop: '1rem',
-                        height: '0.5rem',
-                        backgroundColor: '#e2e8f0',
-                        borderRadius: '9999px',
-                        overflow: 'hidden'
-                      }}>
-                        <div style={{
-                          height: '100%',
-                          backgroundColor: '#667eea',
-                          transition: 'width 0.3s',
-                          width: `${uploadProgress}%`
-                        }}></div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ marginBottom: '2rem' }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      {t('leadership.form.nameLabel')} *
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                      {['uz', 'ru', 'en'].map(lang => (
-                        <div key={lang}>
-                          <label style={{
-                            display: 'block',
-                            fontSize: '0.75rem',
-                            color: '#64748b',
-                            marginBottom: '0.5rem',
-                            textTransform: 'uppercase',
-                            fontWeight: '600'
-                          }}>
-                            {lang}
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.name[lang]}
-                            onChange={(e) => setFormData(prev => ({
-                              ...prev,
-                              name: { ...prev.name, [lang]: e.target.value }
-                            }))}
-                            placeholder={`${t('leadership.form.nameLabel')} (${lang.toUpperCase()})`}
-                            style={{
-                              width: '100%',
-                              padding: '0.75rem 1rem',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '0.5rem',
-                              fontSize: '0.95rem',
-                              transition: 'border-color 0.2s'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                            required
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '2rem' }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      {t('leadership.form.positionLabel')} *
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-                      {['uz', 'ru', 'en'].map(lang => (
-                        <div key={lang}>
-                          <label style={{
-                            display: 'block',
-                            fontSize: '0.75rem',
-                            color: '#64748b',
-                            marginBottom: '0.5rem',
-                            textTransform: 'uppercase',
-                            fontWeight: '600'
-                          }}>
-                            {lang}
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.position[lang]}
-                            onChange={(e) => setFormData(prev => ({
-                              ...prev,
-                              position: { ...prev.position, [lang]: e.target.value }
-                            }))}
-                            placeholder={`${t('leadership.form.positionLabel')} (${lang.toUpperCase()})`}
-                            style={{
-                              width: '100%',
-                              padding: '0.75rem 1rem',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '0.5rem',
-                              fontSize: '0.95rem',
-                              transition: 'border-color 0.2s'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                            required
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '2rem' }}>
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      <Award size={18} />
-                      {t('leadership.form.academicDegreeLabel')}
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.academicDegree}
-                      onChange={(e) => setFormData(prev => ({ ...prev, academicDegree: e.target.value }))}
-                      placeholder={t('leadership.form.academicDegreePlaceholder')}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.95rem',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                  </div>
-
-                  {formData.role === 'employee' && (
+              {/* Form Content - Scrollable */}
+              <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '2rem',
+                backgroundColor: '#ffffff'
+              }}>
+                {activeTab === 'basic' && (
+                  <div>
+                    {/* Role Selection */}
                     <div style={{ marginBottom: '2rem' }}>
                       <label style={{
                         display: 'block',
@@ -1072,387 +869,664 @@ const LeadershipAdmin = () => {
                         color: '#0f172a',
                         marginBottom: '0.75rem'
                       }}>
-                        {t('leadership.form.departmentLabel')} *
+                        {t('leadership.form.roleLabel')} *
                       </label>
-                      <select
-                        value={formData.departmentId}
-                        onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        {roleOptions.map(role => (
+                          <label key={role.value} style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            padding: '1rem',
+                            border: formData.role === role.value ? '2px solid #667eea' : '2px solid #e2e8f0',
+                            borderRadius: '0.75rem',
+                            cursor: 'pointer',
+                            backgroundColor: formData.role === role.value ? '#f0f9ff' : 'white',
+                            transition: 'all 0.2s'
+                          }}>
+                            <input
+                              type="radio"
+                              name="role"
+                              value={role.value}
+                              checked={formData.role === role.value}
+                              onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                role: e.target.value,
+                                departmentId: e.target.value === 'leadership' ? '' : prev.departmentId
+                              }))}
+                              style={{ width: '1.25rem', height: '1.25rem' }}
+                            />
+                            <span style={{ fontSize: '1.5rem' }}>{role.icon}</span>
+                            <span style={{ fontWeight: '600', color: '#0f172a' }}>
+                              {role.label[currentLang]}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Image Upload */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        {t('leadership.form.imageLabel')} *
+                      </label>
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        {formData.img && (
+                          <div style={{ position: 'relative' }}>
+                            <img
+                              src={formData.img}
+                              alt="Preview"
+                              style={{
+                                width: '10rem',
+                                height: '10rem',
+                                objectFit: 'cover',
+                                borderRadius: '0.75rem',
+                                border: '2px solid #e2e8f0'
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, img: '' }))}
+                              style={{
+                                position: 'absolute',
+                                top: '-0.5rem',
+                                right: '-0.5rem',
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '2rem',
+                                height: '2rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        )}
+                        <label style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minHeight: '10rem',
+                          border: '2px dashed #cbd5e1',
+                          borderRadius: '0.75rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          backgroundColor: '#f8fafc'
+                        }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.backgroundColor = '#f0f9ff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                            e.currentTarget.style.backgroundColor = '#f8fafc';
+                          }}
+                        >
+                          <Upload style={{ color: '#94a3b8', marginBottom: '0.75rem' }} size={40} />
+                          <span style={{ fontSize: '0.95rem', color: '#475569', fontWeight: '500' }}>
+                            {t('leadership.form.imageUpload')}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                            {t('leadership.form.imageFormat')}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                      </div>
+                      {uploadProgress > 0 && (
+                        <div style={{
+                          marginTop: '1rem',
+                          height: '0.5rem',
+                          backgroundColor: '#e2e8f0',
+                          borderRadius: '9999px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            backgroundColor: '#667eea',
+                            transition: 'width 0.3s',
+                            width: `${uploadProgress}%`
+                          }}></div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Name Fields */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        {t('leadership.form.nameLabel')} *
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                        {['uz', 'ru', 'en'].map(lang => (
+                          <div key={lang}>
+                            <label style={{
+                              display: 'block',
+                              fontSize: '0.75rem',
+                              color: '#64748b',
+                              marginBottom: '0.5rem',
+                              textTransform: 'uppercase',
+                              fontWeight: '600'
+                            }}>
+                              {lang}
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.name[lang]}
+                              onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                name: { ...prev.name, [lang]: e.target.value }
+                              }))}
+                              placeholder={`${t('leadership.form.nameLabel')} (${lang.toUpperCase()})`}
+                              style={{
+                                width: '100%',
+                                padding: '0.75rem 1rem',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.5rem',
+                                fontSize: '0.95rem',
+                                transition: 'border-color 0.2s'
+                              }}
+                              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                              required
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Position Fields */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        {t('leadership.form.positionLabel')} *
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                        {['uz', 'ru', 'en'].map(lang => (
+                          <div key={lang}>
+                            <label style={{
+                              display: 'block',
+                              fontSize: '0.75rem',
+                              color: '#64748b',
+                              marginBottom: '0.5rem',
+                              textTransform: 'uppercase',
+                              fontWeight: '600'
+                            }}>
+                              {lang}
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.position[lang]}
+                              onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                position: { ...prev.position, [lang]: e.target.value }
+                              }))}
+                              placeholder={`${t('leadership.form.positionLabel')} (${lang.toUpperCase()})`}
+                              style={{
+                                width: '100%',
+                                padding: '0.75rem 1rem',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.5rem',
+                                fontSize: '0.95rem',
+                                transition: 'border-color 0.2s'
+                              }}
+                              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                              required
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Academic Degree */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        <Award size={18} />
+                        {t('leadership.form.academicDegreeLabel')}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.academicDegree}
+                        onChange={(e) => setFormData(prev => ({ ...prev, academicDegree: e.target.value }))}
+                        placeholder={t('leadership.form.academicDegreePlaceholder')}
                         style={{
                           width: '100%',
                           padding: '0.75rem 1rem',
                           border: '1px solid #e2e8f0',
                           borderRadius: '0.5rem',
                           fontSize: '0.95rem',
-                          backgroundColor: 'white',
-                          cursor: 'pointer',
                           transition: 'border-color 0.2s'
                         }}
                         onFocus={(e) => e.target.style.borderColor = '#667eea'}
                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                        required
-                      >
-                        <option value="">{t('leadership.form.selectDepartment')}</option>
-                        {departments.map(dept => (
-                          <option key={dept._id} value={dept._id}>
-                            {dept.title?.[currentLang]}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
-                  )}
 
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
+                    {/* Department (if employee) */}
+                    {formData.role === 'employee' && (
+                      <div style={{ marginBottom: '2rem' }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          color: '#0f172a',
+                          marginBottom: '0.75rem'
+                        }}>
+                          {t('leadership.form.departmentLabel')} *
+                        </label>
+                        <select
+                          value={formData.departmentId}
+                          onChange={(e) => setFormData(prev => ({ ...prev, departmentId: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem 1rem',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.95rem',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            transition: 'border-color 0.2s'
+                          }}
+                          onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                          onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                          required
+                        >
+                          <option value="">{t('leadership.form.selectDepartment')}</option>
+                          {departments.map(dept => (
+                            <option key={dept._id} value={dept._id}>
+                              {dept.title?.[currentLang]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Bio with ReactQuill */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        {t('leadership.form.bioLabel')}
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+                        {['uz', 'ru', 'en'].map(lang => (
+                          <div key={lang}>
+                            <label style={{
+                              display: 'block',
+                              fontSize: '0.75rem',
+                              color: '#64748b',
+                              marginBottom: '0.5rem',
+                              textTransform: 'uppercase',
+                              fontWeight: '600'
+                            }}>
+                              {lang}
+                            </label>
+                            <ReactQuill
+                              theme="snow"
+                              value={formData.bio[lang]}
+                              onChange={(value) => setFormData(prev => ({
+                                ...prev,
+                                bio: { ...prev.bio, [lang]: value }
+                              }))}
+                              modules={modules}
+                              formats={formats}
+                              placeholder={`${t('leadership.form.bioLabel')} (${lang.toUpperCase()})`}
+                              style={{
+                                backgroundColor: 'white',
+                                borderRadius: '0.5rem'
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'contact' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        <Mail size={18} />
+                        {t('leadership.form.emailLabel')}
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="example@mail.com"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.95rem',
+                          transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        <Phone size={18} />
+                        {t('leadership.form.phoneLabel')}
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="+998 XX XXX XX XX"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.95rem',
+                          transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        <Phone size={18} />
+                        {t('leadership.form.workPhoneLabel')}
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.workPhone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, workPhone: e.target.value }))}
+                        placeholder="+998 XX XXX XX XX"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.95rem',
+                          transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'schedule' && (
+                  <div style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '0.75rem',
+                    padding: '1.5rem',
+                    backgroundColor: '#f8fafc'
+                  }}>
+                    <h3 style={{
                       fontWeight: '600',
                       color: '#0f172a',
-                      marginBottom: '0.75rem'
+                      marginBottom: '1.5rem',
+                      fontSize: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
                     }}>
-                      {t('leadership.form.bioLabel')}
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-                      {['uz', 'ru', 'en'].map(lang => (
-                        <div key={lang}>
-                          <label style={{
-                            display: 'block',
-                            fontSize: '0.75rem',
-                            color: '#64748b',
-                            marginBottom: '0.5rem',
-                            textTransform: 'uppercase',
-                            fontWeight: '600'
+                      <Calendar size={20} />
+                      {t('leadership.form.scheduleTitle')}
+                    </h3>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '1rem'
+                      }}>
+                        {t('leadership.form.scheduleDays')}
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                        {daysOptions.map(day => (
+                          <label key={day.value} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            padding: '0.75rem 1rem',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            backgroundColor: formData.schedule.days.includes(day.value) ? '#f0f9ff' : 'white',
+                            borderColor: formData.schedule.days.includes(day.value) ? '#667eea' : '#e2e8f0',
+                            transition: 'all 0.2s'
                           }}>
-                            {lang}
+                            <input
+                              type="checkbox"
+                              checked={formData.schedule.days.includes(day.value)}
+                              onChange={(e) => {
+                                const days = e.target.checked
+                                  ? [...formData.schedule.days, day.value]
+                                  : formData.schedule.days.filter(d => d !== day.value);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  schedule: { ...prev.schedule, days }
+                                }));
+                              }}
+                              style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontWeight: '500' }}>{day.label[currentLang]}</span>
                           </label>
-                          <textarea
-                            value={formData.bio[lang]}
+                        ))}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                        <div>
+                          <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '600',
+                            color: '#0f172a',
+                            marginBottom: '0.75rem'
+                          }}>
+                            <Clock size={18} />
+                            {t('leadership.form.startTime')}
+                          </label>
+                          <input
+                            type="time"
+                            value={formData.schedule.start}
                             onChange={(e) => setFormData(prev => ({
                               ...prev,
-                              bio: { ...prev.bio, [lang]: e.target.value }
+                              schedule: { ...prev.schedule, start: e.target.value }
                             }))}
-                            placeholder={`${t('leadership.form.bioLabel')} (${lang.toUpperCase()})`}
-                            rows={3}
                             style={{
                               width: '100%',
                               padding: '0.75rem 1rem',
                               border: '1px solid #e2e8f0',
                               borderRadius: '0.5rem',
                               fontSize: '0.95rem',
-                              resize: 'vertical',
-                              fontFamily: 'inherit',
+                              backgroundColor: 'white',
                               transition: 'border-color 0.2s'
                             }}
                             onFocus={(e) => e.target.style.borderColor = '#667eea'}
                             onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                           />
                         </div>
-                      ))}
+                        <div>
+                          <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontSize: '0.875rem',
+                            fontWeight: '600',
+                            color: '#0f172a',
+                            marginBottom: '0.75rem'
+                          }}>
+                            <Clock size={18} />
+                            {t('leadership.form.endTime')}
+                          </label>
+                          <input
+                            type="time"
+                            value={formData.schedule.end}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              schedule: { ...prev.schedule, end: e.target.value }
+                            }))}
+                            style={{
+                              width: '100%',
+                              padding: '0.75rem 1rem',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '0.5rem',
+                              fontSize: '0.95rem',
+                              backgroundColor: 'white',
+                              transition: 'border-color 0.2s'
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {activeTab === 'contact' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
-                  <div>
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      <Mail size={18} />
-                      {t('leadership.form.emailLabel')}
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="example@mail.com"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.95rem',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      <Phone size={18} />
-                      {t('leadership.form.phoneLabel')}
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="+998 XX XXX XX XX"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.95rem',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      <Phone size={18} />
-                      {t('leadership.form.workPhoneLabel')}
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.workPhone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, workPhone: e.target.value }))}
-                      placeholder="+998 XX XXX XX XX"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.95rem',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'schedule' && (
-                <div style={{
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '0.75rem',
-                  padding: '1.5rem',
-                  backgroundColor: '#f8fafc'
-                }}>
-                  <h3 style={{
-                    fontWeight: '600',
-                    color: '#0f172a',
-                    marginBottom: '1.5rem',
-                    fontSize: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    <Calendar size={20} />
-                    {t('leadership.form.scheduleTitle')}
-                  </h3>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '1rem'
-                    }}>
-                      {t('leadership.form.scheduleDays')}
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                      {daysOptions.map(day => (
-                        <label key={day.value} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
+                {activeTab === 'other' && (
+                  <div style={{ display: 'grid', gap: '1.5rem' }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.75rem'
+                      }}>
+                        {t('leadership.form.orderLabel')}
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.order}
+                        onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                        placeholder="0"
+                        style={{
+                          width: '100%',
                           padding: '0.75rem 1rem',
                           border: '1px solid #e2e8f0',
                           borderRadius: '0.5rem',
-                          cursor: 'pointer',
-                          fontSize: '0.875rem',
-                          backgroundColor: formData.schedule.days.includes(day.value) ? '#f0f9ff' : 'white',
-                          borderColor: formData.schedule.days.includes(day.value) ? '#667eea' : '#e2e8f0',
-                          transition: 'all 0.2s'
-                        }}>
-                          <input
-                            type="checkbox"
-                            checked={formData.schedule.days.includes(day.value)}
-                            onChange={(e) => {
-                              const days = e.target.checked
-                                ? [...formData.schedule.days, day.value]
-                                : formData.schedule.days.filter(d => d !== day.value);
-                              setFormData(prev => ({
-                                ...prev,
-                                schedule: { ...prev.schedule, days }
-                              }));
-                            }}
-                            style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
-                          />
-                          <span style={{ fontWeight: '500' }}>{day.label[currentLang]}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                      <div>
-                        <label style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontSize: '0.875rem',
-                          fontWeight: '600',
-                          color: '#0f172a',
-                          marginBottom: '0.75rem'
-                        }}>
-                          <Clock size={18} />
-                          {t('leadership.form.startTime')}
-                        </label>
-                        <input
-                          type="time"
-                          value={formData.schedule.start}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            schedule: { ...prev.schedule, start: e.target.value }
-                          }))}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '0.5rem',
-                            fontSize: '0.95rem',
-                            backgroundColor: 'white',
-                            transition: 'border-color 0.2s'
-                          }}
-                          onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                          onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                        />
-                      </div>
-                      <div>
-                        <label style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontSize: '0.875rem',
-                          fontWeight: '600',
-                          color: '#0f172a',
-                          marginBottom: '0.75rem'
-                        }}>
-                          <Clock size={18} />
-                          {t('leadership.form.endTime')}
-                        </label>
-                        <input
-                          type="time"
-                          value={formData.schedule.end}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            schedule: { ...prev.schedule, end: e.target.value }
-                          }))}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '0.5rem',
-                            fontSize: '0.95rem',
-                            backgroundColor: 'white',
-                            transition: 'border-color 0.2s'
-                          }}
-                          onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                          onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'other' && (
-                <div style={{ display: 'grid', gap: '1.5rem' }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '600',
-                      color: '#0f172a',
-                      marginBottom: '0.75rem'
-                    }}>
-                      {t('leadership.form.orderLabel')}
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.order}
-                      onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
-                      placeholder="0"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.95rem',
-                        transition: 'border-color 0.2s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                      onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '1rem',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '0.75rem',
-                      cursor: 'pointer',
-                      backgroundColor: formData.isActive ? '#f0fdf4' : '#fef2f2',
-                      borderColor: formData.isActive ? '#10b981' : '#ef4444',
-                      transition: 'all 0.2s'
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={formData.isActive}
-                        onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                        style={{ width: '1.25rem', height: '1.25rem', cursor: 'pointer' }}
+                          fontSize: '0.95rem',
+                          transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                       />
-                      <div>
-                        <span style={{
-                          fontWeight: '600',
-                          color: '#0f172a',
-                          display: 'block',
-                          marginBottom: '0.25rem'
-                        }}>
-                          {t('leadership.form.activeStatus')}
-                        </span>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          {t('leadership.form.activeStatusDesc')}
-                        </span>
-                      </div>
-                    </label>
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '1rem',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '0.75rem',
+                        cursor: 'pointer',
+                        backgroundColor: formData.isActive ? '#f0fdf4' : '#fef2f2',
+                        borderColor: formData.isActive ? '#10b981' : '#ef4444',
+                        transition: 'all 0.2s'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={formData.isActive}
+                          onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                          style={{ width: '1.25rem', height: '1.25rem', cursor: 'pointer' }}
+                        />
+                        <div>
+                          <span style={{
+                            fontWeight: '600',
+                            color: '#0f172a',
+                            display: 'block',
+                            marginBottom: '0.25rem'
+                          }}>
+                            {t('leadership.form.activeStatus')}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            {t('leadership.form.activeStatusDesc')}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
+              {/* Modal Footer */}
               <div style={{
+                padding: '1.5rem 2rem',
+                borderTop: '2px solid #f1f5f9',
+                backgroundColor: '#fafafa',
                 display: 'flex',
-                gap: '1rem',
-                paddingTop: '2rem',
-                marginTop: '2rem',
-                borderTopRetrySContinue: '2px solid #f1f5f9'
+                gap: '1rem'
               }}>
                 <button
                   type="submit"
@@ -1528,69 +1602,80 @@ const LeadershipAdmin = () => {
           </div>
         </div>
       )}
+
       <style>{`
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
 
-    @keyframes slideUp {
-      from {
-        transform: translateY(20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
+        @keyframes slideUp {
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
 
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
 
-    *::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
+        *::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
 
-    *::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      borderRadius: 10px;
-    }
+        *::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          borderRadius: 10px;
+        }
 
-    *::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      borderRadius: 10px;
-    }
+        *::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          borderRadius: 10px;
+        }
 
-    *::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
+        *::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
 
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-  `}</style>
+        input:focus, select:focus, textarea:focus, .quill-editor:focus-within {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .ql-container {
+          font-size: 0.95rem;
+          min-height: 150px;
+        }
+
+        .ql-editor {
+          min-height: 150px;
+        }
+      `}</style>
     </div>
   );
 };
+
 export default LeadershipAdmin;

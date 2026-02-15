@@ -173,13 +173,25 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border: none;
   border-radius: 8px;
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.action-btn svg {
+  flex-shrink: 0;
+}
+
+.action-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .edit-btn {
@@ -192,6 +204,7 @@
   background: #3182ce;
   color: white;
   border-color: #3182ce;
+  transform: translateY(-1px);
 }
 
 .delete-btn {
@@ -204,6 +217,7 @@
   background: #e53e3e;
   color: white;
   border-color: #e53e3e;
+  transform: translateY(-1px);
 }
 
 /* Modal Form */
@@ -256,6 +270,62 @@
 .form-textarea {
   resize: vertical;
   min-height: 100px;
+}
+
+/* React Quill Editor Styles */
+.quill-editor {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.quill-editor .ql-toolbar {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 12px;
+}
+
+.quill-editor .ql-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 0 0 8px 8px;
+  font-size: 0.9375rem;
+  min-height: 200px;
+}
+
+.quill-editor .ql-editor {
+  min-height: 200px;
+  padding: 16px;
+}
+
+.quill-editor .ql-editor.ql-blank::before {
+  color: #a0aec0;
+  font-style: normal;
+}
+
+.quill-editor:focus-within .ql-toolbar,
+.quill-editor:focus-within .ql-container {
+  border-color: #667eea;
+}
+
+/* Quill toolbar tugmalari */
+.ql-toolbar .ql-stroke {
+  stroke: #4a5568;
+}
+
+.ql-toolbar .ql-fill {
+  fill: #4a5568;
+}
+
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+  stroke: #667eea;
+}
+
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button.ql-active .ql-fill {
+  fill: #667eea;
 }
 
 .media-input-group {
@@ -395,121 +465,6 @@
 
 .slick-dots li.slick-active button:before {
   color: #667eea;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .news-content {
-    margin-left: 0;
-    padding: 24px;
-  }
-
-  .news-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .news-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .add-news-btn {
-    width: 100%;
-  }
-
-  .news-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .uploaded-files-grid {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  }
-}
-
-/* News Card Actions */
-.news-card-actions {
-  display: flex;
-  gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid #e2e8f0;
-  background: #f7fafc;
-}
-
-.action-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap; /* Matnni bir qatorda saqlash */
-  min-width: 0; /* Flex uchun */
-}
-
-.action-btn svg {
-  flex-shrink: 0; /* Ikonka kichraymasligini ta'minlash */
-}
-
-.action-btn span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.edit-btn {
-  background: #ebf8ff;
-  color: #3182ce;
-  border: 1px solid #bee3f8;
-}
-
-.edit-btn:hover {
-  background: #3182ce;
-  color: white;
-  border-color: #3182ce;
-  transform: translateY(-1px);
-}
-
-.delete-btn {
-  background: #fff5f5;
-  color: #e53e3e;
-  border: 1px solid #feb2b2;
-}
-
-.delete-btn:hover {
-  background: #e53e3e;
-  color: white;
-  border-color: #e53e3e;
-  transform: translateY(-1px);
-}
-
-/* Kichik ekranlar uchun */
-@media (max-width: 480px) {
-  .news-card-actions {
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px;
-  }
-
-  .action-btn {
-    width: 100%;
-  }
-}
-
-/* Juda uzun matnlar uchun alternativ */
-@media (max-width: 380px) {
-  .action-btn {
-    font-size: 0.875rem;
-    padding: 10px 16px;
-  }
 }
 
 /* Search Container */
@@ -670,13 +625,53 @@
   display: inline;
 }
 
+/* Responsive */
+@media (max-width: 1024px) {
+  .news-content {
+    margin-left: 0;
+    padding: 24px;
+  }
+
+  .news-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
+  .news-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .add-news-btn {
+    width: 100%;
+  }
+
+  .news-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .uploaded-files-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+
   .search-wrapper {
     max-width: 100%;
   }
 }
 
 @media (max-width: 480px) {
+  .news-card-actions {
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+  
   .action-btn-text {
     display: none;
   }
@@ -684,5 +679,12 @@
   .action-btn {
     min-width: 48px;
     padding: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .action-btn {
+    font-size: 0.875rem;
+    padding: 10px 16px;
   }
 }

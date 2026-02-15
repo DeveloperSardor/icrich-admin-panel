@@ -6,6 +6,8 @@ import Sidebar from '../../components/sidebar/Sidebar';
 import Modal from '../../components/news-add/NewsAdd';
 import Context from '../../context/Context';
 import { useTranslation } from 'react-i18next';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -36,6 +38,31 @@ const DocsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
 
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'font': [] }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['blockquote', 'code-block'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet', 'align',
+    'link', 'image', 'video',
+    'blockquote', 'code-block'
+  ];
+
   useEffect(() => {
     fetchDocs();
   }, []);
@@ -53,10 +80,17 @@ const DocsPage = () => {
           doc.title_ru?.toLowerCase().includes(searchLower) ||
           doc.title_uz?.toLowerCase().includes(searchLower);
         
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
         const textMatch = 
-          doc.text_en?.toLowerCase().includes(searchLower) ||
-          doc.text_ru?.toLowerCase().includes(searchLower) ||
-          doc.text_uz?.toLowerCase().includes(searchLower);
+          stripHtml(doc.text_en).toLowerCase().includes(searchLower) ||
+          stripHtml(doc.text_ru).toLowerCase().includes(searchLower) ||
+          stripHtml(doc.text_uz).toLowerCase().includes(searchLower);
         
         return titleMatch || textMatch;
       });
@@ -169,6 +203,14 @@ const DocsPage = () => {
     }
   };
 
+  const handleQuillChange = (value, field) => {
+    if (editDoc) {
+      setEditDoc({ ...editDoc, [field]: value });
+    } else {
+      setNewDoc({ ...newDoc, [field]: value });
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const day = date.getDate();
@@ -195,6 +237,14 @@ const DocsPage = () => {
     const year = date.getFullYear();
     
     return `${day}-${month} ${year}`;
+  };
+
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   const handlePageClick = ({ selected }) => {
@@ -268,7 +318,9 @@ const DocsPage = () => {
 
                   <div className="doc-content">
                     <h3 className="doc-title">{doc[`title_${currentLang}`]}</h3>
-                    <p className="doc-text">{doc[`text_${currentLang}`]}</p>
+                    <p className="doc-text">
+                      {truncateHtmlText(doc[`text_${currentLang}`], 150)}
+                    </p>
 
                     {doc.createdAt && (
                       <div className="doc-meta">
@@ -345,6 +397,7 @@ const DocsPage = () => {
               {editDoc ? t("editDoc") : t("addDoc")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -355,16 +408,18 @@ const DocsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder={t("textUz")}
+              <ReactQuill
+                theme="snow"
                 value={editDoc ? editDoc.text_uz : newDoc.text_uz}
-                onChange={(e) => handleInputChange(e, 'text_uz')}
-                className="form-textarea"
-                rows="4"
-                required
+                onChange={(value) => handleQuillChange(value, 'text_uz')}
+                modules={modules}
+                formats={formats}
+                placeholder={t("textUz")}
+                className="quill-editor"
               />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -375,16 +430,18 @@ const DocsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder={t("textRu")}
+              <ReactQuill
+                theme="snow"
                 value={editDoc ? editDoc.text_ru : newDoc.text_ru}
-                onChange={(e) => handleInputChange(e, 'text_ru')}
-                className="form-textarea"
-                rows="4"
-                required
+                onChange={(value) => handleQuillChange(value, 'text_ru')}
+                modules={modules}
+                formats={formats}
+                placeholder={t("textRu")}
+                className="quill-editor"
               />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -395,16 +452,18 @@ const DocsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder={t("textEn")}
+              <ReactQuill
+                theme="snow"
                 value={editDoc ? editDoc.text_en : newDoc.text_en}
-                onChange={(e) => handleInputChange(e, 'text_en')}
-                className="form-textarea"
-                rows="4"
-                required
+                onChange={(value) => handleQuillChange(value, 'text_en')}
+                modules={modules}
+                formats={formats}
+                placeholder={t("textEn")}
+                className="quill-editor"
               />
             </div>
 
+            {/* DOCUMENT LINK */}
             <div className="form-section">
               <h3 className="section-title">{t("documentLink")}</h3>
               <input

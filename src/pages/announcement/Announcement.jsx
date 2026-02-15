@@ -6,6 +6,8 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import { useTranslation } from "react-i18next";
 import Context from "../../context/Context";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -42,6 +44,31 @@ const AnnouncementPage = () => {
   const itemsPerPage = 6;
   const [imageUploading, setImageUploading] = useState(false);
 
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'font': [] }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['blockquote', 'code-block'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet', 'align',
+    'link', 'image', 'video',
+    'blockquote', 'code-block'
+  ];
+
   useEffect(() => {
     fetchAnnouncements();
   }, []);
@@ -59,10 +86,17 @@ const AnnouncementPage = () => {
           ann.title_ru?.toLowerCase().includes(searchLower) ||
           ann.title_uz?.toLowerCase().includes(searchLower);
         
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
         const descMatch = 
-          ann.desc_en?.toLowerCase().includes(searchLower) ||
-          ann.desc_ru?.toLowerCase().includes(searchLower) ||
-          ann.desc_uz?.toLowerCase().includes(searchLower);
+          stripHtml(ann.desc_en).toLowerCase().includes(searchLower) ||
+          stripHtml(ann.desc_ru).toLowerCase().includes(searchLower) ||
+          stripHtml(ann.desc_uz).toLowerCase().includes(searchLower);
         
         return titleMatch || descMatch;
       });
@@ -199,6 +233,14 @@ const AnnouncementPage = () => {
     return `${day}-${month} ${year}`;
   };
 
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   // Pagination
   const pageCount = Math.ceil(filteredAnnouncements.length / itemsPerPage);
   const offset = currentPage * itemsPerPage;
@@ -281,7 +323,7 @@ const AnnouncementPage = () => {
                       {ann[`title_${currentLang}`]}
                     </h3>
                     <p className="announcement-excerpt">
-                      {ann[`desc_${currentLang}`]?.slice(0, 150)}...
+                      {truncateHtmlText(ann[`desc_${currentLang}`], 150)}
                     </p>
 
                     {ann.createdAt && (
@@ -354,6 +396,7 @@ const AnnouncementPage = () => {
               {editing ? t("editAnnouncement") : t("addAnnouncement")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -369,21 +412,23 @@ const AnnouncementPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={currentAnnouncement.desc_uz}
-                onChange={(e) =>
+                onChange={(value) =>
                   setCurrentAnnouncement({
                     ...currentAnnouncement,
-                    desc_uz: e.target.value,
+                    desc_uz: value,
                   })
                 }
+                modules={modules}
+                formats={formats}
                 placeholder={t("descUz")}
-                className="form-textarea"
-                rows="4"
-                required
+                className="quill-editor"
               />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -399,21 +444,23 @@ const AnnouncementPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={currentAnnouncement.desc_ru}
-                onChange={(e) =>
+                onChange={(value) =>
                   setCurrentAnnouncement({
                     ...currentAnnouncement,
-                    desc_ru: e.target.value,
+                    desc_ru: value,
                   })
                 }
+                modules={modules}
+                formats={formats}
                 placeholder={t("descRu")}
-                className="form-textarea"
-                rows="4"
-                required
+                className="quill-editor"
               />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -429,21 +476,23 @@ const AnnouncementPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={currentAnnouncement.desc_en}
-                onChange={(e) =>
+                onChange={(value) =>
                   setCurrentAnnouncement({
                     ...currentAnnouncement,
-                    desc_en: e.target.value,
+                    desc_en: value,
                   })
                 }
+                modules={modules}
+                formats={formats}
                 placeholder={t("descEn")}
-                className="form-textarea"
-                rows="4"
-                required
+                className="quill-editor"
               />
             </div>
 
+            {/* RASM YUKLASH */}
             <div className="form-section">
               <h3 className="section-title">{t("image")}</h3>
               <div className="file-input-wrapper">

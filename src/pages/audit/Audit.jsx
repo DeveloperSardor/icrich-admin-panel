@@ -6,6 +6,8 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -42,6 +44,26 @@ const Audit = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
 
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
+
   useEffect(() => {
     fetchDocs();
   }, []);
@@ -58,10 +80,17 @@ const Audit = () => {
           doc.title_ru?.toLowerCase().includes(searchLower) ||
           doc.title_uz?.toLowerCase().includes(searchLower);
 
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
         const descMatch =
-          doc.desc_en?.toLowerCase().includes(searchLower) ||
-          doc.desc_ru?.toLowerCase().includes(searchLower) ||
-          doc.desc_uz?.toLowerCase().includes(searchLower);
+          stripHtml(doc.desc_en || "").toLowerCase().includes(searchLower) ||
+          stripHtml(doc.desc_ru || "").toLowerCase().includes(searchLower) ||
+          stripHtml(doc.desc_uz || "").toLowerCase().includes(searchLower);
 
         return titleMatch || descMatch;
       });
@@ -232,6 +261,14 @@ const Audit = () => {
     return `${day}-${month} ${year}`;
   };
 
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   const handlePageClick = ({ selected }) => {
     setCurrentPage(selected);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -310,11 +347,14 @@ const Audit = () => {
                     </h3>
 
                     <p className="audit-description">
-                      {currentLang === "en"
-                        ? doc.desc_en
-                        : currentLang === "ru"
-                        ? doc.desc_ru
-                        : doc.desc_uz}
+                      {truncateHtmlText(
+                        currentLang === "en"
+                          ? doc.desc_en
+                          : currentLang === "ru"
+                          ? doc.desc_ru
+                          : doc.desc_uz,
+                        150
+                      )}
                     </p>
 
                     {doc.createdAt && (
@@ -386,6 +426,7 @@ const Audit = () => {
               {editingId ? t("editAudit") : t("addAudit")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -396,16 +437,18 @@ const Audit = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder="Tavsif (O'zbekcha)"
+              <ReactQuill
+                theme="snow"
                 value={formData.desc_uz}
-                onChange={(e) => handleInputChange("desc_uz", e.target.value)}
-                className="form-textarea"
-                rows="3"
-                required
+                onChange={(value) => handleInputChange("desc_uz", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Tavsif (O'zbekcha)"
+                className="quill-editor"
               />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -416,16 +459,18 @@ const Audit = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder="Описание (Русский)"
+              <ReactQuill
+                theme="snow"
                 value={formData.desc_ru}
-                onChange={(e) => handleInputChange("desc_ru", e.target.value)}
-                className="form-textarea"
-                rows="3"
-                required
+                onChange={(value) => handleInputChange("desc_ru", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Описание (Русский)"
+                className="quill-editor"
               />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -436,16 +481,18 @@ const Audit = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder="Description (English)"
+              <ReactQuill
+                theme="snow"
                 value={formData.desc_en}
-                onChange={(e) => handleInputChange("desc_en", e.target.value)}
-                className="form-textarea"
-                rows="3"
-                required
+                onChange={(value) => handleInputChange("desc_en", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Description (English)"
+                className="quill-editor"
               />
             </div>
 
+            {/* PDF LINK */}
             <div className="form-section">
               <h3 className="section-title">{t("pdfLinkPlaceholder")}</h3>
               <input

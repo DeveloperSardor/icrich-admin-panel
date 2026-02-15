@@ -7,6 +7,8 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -33,6 +35,11 @@ const DepartmentForm = () => {
       ru: "",
       uz: "",
     },
+    description: {
+      en: "",
+      ru: "",
+      uz: "",
+    },
     img: "",
     order: 0,
   });
@@ -45,50 +52,81 @@ const DepartmentForm = () => {
   const [expandedDepts, setExpandedDepts] = useState({});
   const itemsPerPage = 6;
 
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
+
   useEffect(() => {
     fetchDepartments();
   }, []);
 
-useEffect(() => {
-  if (searchQuery.trim() === "") {
-    // Sort by order
-    const sorted = [...departmentList].sort((a, b) => a.order - b.order);
-    setFilteredDepartments(sorted);
-  } else {
-    const filtered = departmentList.filter((dept) => {
-      const searchLower = searchQuery.toLowerCase();
-      
-      const titleMatch = 
-        dept.title?.en?.toLowerCase().includes(searchLower) ||
-        dept.title?.ru?.toLowerCase().includes(searchLower) ||
-        dept.title?.uz?.toLowerCase().includes(searchLower);
-      
-      return titleMatch;
-    }).sort((a, b) => a.order - b.order); // Sort qo'shish
-    
-    setFilteredDepartments(filtered);
-    setCurrentPage(0);
-  }
-}, [searchQuery, departmentList]);
-
- const fetchDepartments = async () => {
-  try {
-    setLoading(true);
-    const response = await axios.get(`${BACKEND_URL}/api/department`);
-    if (response.data.success) {
-      const sorted = [...response.data.data].sort((a, b) => a.order - b.order);
-      setDepartmentList(sorted);
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      const sorted = [...departmentList].sort((a, b) => a.order - b.order);
       setFilteredDepartments(sorted);
     } else {
-      toast.error(t("fetchError"));
+      const filtered = departmentList.filter((dept) => {
+        const searchLower = searchQuery.toLowerCase();
+        
+        const titleMatch = 
+          dept.title?.en?.toLowerCase().includes(searchLower) ||
+          dept.title?.ru?.toLowerCase().includes(searchLower) ||
+          dept.title?.uz?.toLowerCase().includes(searchLower);
+
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
+        const descMatch = 
+          stripHtml(dept.description?.en || "").toLowerCase().includes(searchLower) ||
+          stripHtml(dept.description?.ru || "").toLowerCase().includes(searchLower) ||
+          stripHtml(dept.description?.uz || "").toLowerCase().includes(searchLower);
+        
+        return titleMatch || descMatch;
+      }).sort((a, b) => a.order - b.order);
+      
+      setFilteredDepartments(filtered);
+      setCurrentPage(0);
     }
-  } catch (error) {
-    console.error("Error fetching departments:", error);
-    toast.error(t("fetchError"));
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [searchQuery, departmentList]);
+
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BACKEND_URL}/api/department`);
+      if (response.data.success) {
+        const sorted = [...response.data.data].sort((a, b) => a.order - b.order);
+        setDepartmentList(sorted);
+        setFilteredDepartments(sorted);
+      } else {
+        toast.error(t("fetchError"));
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      toast.error(t("fetchError"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -126,6 +164,11 @@ useEffect(() => {
         ru: "",
         uz: "",
       },
+      description: {
+        en: "",
+        ru: "",
+        uz: "",
+      },
       img: "",
       order: departmentList.length,
     });
@@ -140,6 +183,11 @@ useEffect(() => {
         ru: department.title?.ru || "",
         uz: department.title?.uz || "",
       },
+      description: {
+        en: department.description?.en || "",
+        ru: department.description?.ru || "",
+        uz: department.description?.uz || "",
+      },
       img: department.img || "",
       order: department.order || 0,
     });
@@ -150,6 +198,11 @@ useEffect(() => {
     setEditingId(null);
     setFormData({
       title: {
+        en: "",
+        ru: "",
+        uz: "",
+      },
+      description: {
         en: "",
         ru: "",
         uz: "",
@@ -213,7 +266,6 @@ useEffect(() => {
 
     setFilteredDepartments(items);
 
-    // Update orders in backend
     try {
       const updatePromises = items.map((item, index) =>
         axios.put(`${BACKEND_URL}/api/department/${item._id}/reorder`, {
@@ -253,9 +305,26 @@ useEffect(() => {
           [lang]: value
         }
       });
+    } else if (field.startsWith('description.')) {
+      const lang = field.split('.')[1];
+      setFormData({
+        ...formData,
+        description: {
+          ...formData.description,
+          [lang]: value
+        }
+      });
     } else {
       setFormData({ ...formData, [field]: value });
     }
+  };
+
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   const pageCount = Math.ceil(filteredDepartments.length / itemsPerPage);
@@ -357,6 +426,12 @@ useEffect(() => {
                                   : department.title?.uz}
                               </h3>
 
+                              {department.description?.[currentLang] && (
+                                <p className="department-description">
+                                  {truncateHtmlText(department.description[currentLang], 100)}
+                                </p>
+                              )}
+
                               {department.employees && department.employees.length > 0 && (
                                 <div className="employees-section">
                                   <button
@@ -450,6 +525,7 @@ useEffect(() => {
               {editingId ? t("editDepartment") : t("addDepartment")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -460,8 +536,18 @@ useEffect(() => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.description.uz}
+                onChange={(value) => handleInputChange("description.uz", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Bo'lim tavsifi (O'zbekcha)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -472,8 +558,18 @@ useEffect(() => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.description.ru}
+                onChange={(value) => handleInputChange("description.ru", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Описание отдела (Русский)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -484,8 +580,18 @@ useEffect(() => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.description.en}
+                onChange={(value) => handleInputChange("description.en", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Department Description (English)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* TARTIB RAQAMI */}
             <div className="form-section">
               <h3 className="section-title">Tartib raqami</h3>
               <input
@@ -498,6 +604,7 @@ useEffect(() => {
               />
             </div>
 
+            {/* RASM */}
             <div className="form-section">
               <h3 className="section-title">{t("departmentImage")}</h3>
               <div className="file-input-wrapper">

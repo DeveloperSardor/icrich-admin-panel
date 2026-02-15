@@ -6,6 +6,8 @@ import Modal from "react-modal";
 import { useTranslation } from "react-i18next";
 import Context from "../../context/Context";
 import Slider from "react-slick";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import "./style.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -15,6 +17,26 @@ const NationalListPage = () => {
   const { t } = useTranslation("global");
   const contextDatas = useContext(Context);
   const currentLang = contextDatas.currentLang;
+
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
 
   // Slider settings
   const sliderSettings = {
@@ -182,6 +204,14 @@ const NationalListPage = () => {
   const handleRemoveFile = (index) => {
     const updatedImages = formData.images.filter((_, i) => i !== index);
     setFormData({ ...formData, images: updatedImages });
+  };
+
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   // Form submission
@@ -375,7 +405,7 @@ const NationalListPage = () => {
 
                   {/* Content Section */}
                   <h2>{title}</h2>
-                  <p>{text.slice(0, 150)}...</p>
+                  <p>{truncateHtmlText(text, 150)}</p>
 
                   {/* Action Buttons */}
                   <div className="card-actions">
@@ -411,88 +441,103 @@ const NationalListPage = () => {
         <h2>{isEditing ? t("editNational") : t("addNewNational")}</h2>
         
         <form onSubmit={handleSubmit}>
-          {/* English Fields */}
-          <div className="form-group">
-            <label htmlFor="title-en">{t("titleEn")} *</label>
-            <input
-              id="title-en"
-              type="text"
-              value={formData.title_en}
-              placeholder={t("enterTitleEn")}
-              onChange={(e) =>
-                setFormData({ ...formData, title_en: e.target.value })
-              }
-              required
-            />
+          {/* O'ZBEK TILI */}
+          <div className="form-section">
+            <h3 className="section-title">{t("uzbek")}</h3>
+            <div className="form-group">
+              <label htmlFor="title-uz">{t("titleUz")} *</label>
+              <input
+                id="title-uz"
+                type="text"
+                value={formData.title_uz}
+                placeholder={t("enterTitleUz")}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_uz: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="text-uz">{t("textUz")} *</label>
+              <ReactQuill
+                theme="snow"
+                value={formData.text_uz}
+                onChange={(value) =>
+                  setFormData({ ...formData, text_uz: value })
+                }
+                modules={modules}
+                formats={formats}
+                placeholder="Tavsif (O'zbekcha)"
+                className="quill-editor"
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="text-en">{t("textEn")} *</label>
-            <textarea
-              id="text-en"
-              value={formData.text_en}
-              placeholder={t("enterTextEn")}
-              onChange={(e) =>
-                setFormData({ ...formData, text_en: e.target.value })
-              }
-              required
-            />
+          {/* RUS TILI */}
+          <div className="form-section">
+            <h3 className="section-title">{t("russian")}</h3>
+            <div className="form-group">
+              <label htmlFor="title-ru">{t("titleRu")} *</label>
+              <input
+                id="title-ru"
+                type="text"
+                value={formData.title_ru}
+                placeholder={t("enterTitleRu")}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_ru: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="text-ru">{t("textRu")} *</label>
+              <ReactQuill
+                theme="snow"
+                value={formData.text_ru}
+                onChange={(value) =>
+                  setFormData({ ...formData, text_ru: value })
+                }
+                modules={modules}
+                formats={formats}
+                placeholder="Описание (Русский)"
+                className="quill-editor"
+              />
+            </div>
           </div>
 
-          {/* Russian Fields */}
-          <div className="form-group">
-            <label htmlFor="title-ru">{t("titleRu")} *</label>
-            <input
-              id="title-ru"
-              type="text"
-              value={formData.title_ru}
-              placeholder={t("enterTitleRu")}
-              onChange={(e) =>
-                setFormData({ ...formData, title_ru: e.target.value })
-              }
-              required
-            />
-          </div>
+          {/* INGLIZ TILI */}
+          <div className="form-section">
+            <h3 className="section-title">{t("english")}</h3>
+            <div className="form-group">
+              <label htmlFor="title-en">{t("titleEn")} *</label>
+              <input
+                id="title-en"
+                type="text"
+                value={formData.title_en}
+                placeholder={t("enterTitleEn")}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_en: e.target.value })
+                }
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="text-ru">{t("textRu")} *</label>
-            <textarea
-              id="text-ru"
-              value={formData.text_ru}
-              placeholder={t("enterTextRu")}
-              onChange={(e) =>
-                setFormData({ ...formData, text_ru: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          {/* Uzbek Fields */}
-          <div className="form-group">
-            <label htmlFor="title-uz">{t("titleUz")} *</label>
-            <input
-              id="title-uz"
-              type="text"
-              value={formData.title_uz}
-              placeholder={t("enterTitleUz")}
-              onChange={(e) =>
-                setFormData({ ...formData, title_uz: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="text-uz">{t("textUz")} *</label>
-            <textarea
-              id="text-uz"
-              value={formData.text_uz}
-              placeholder={t("enterTextUz")}
-              onChange={(e) =>
-                setFormData({ ...formData, text_uz: e.target.value })
-              }
-              required
-            />
+            <div className="form-group">
+              <label htmlFor="text-en">{t("textEn")} *</label>
+              <ReactQuill
+                theme="snow"
+                value={formData.text_en}
+                onChange={(value) =>
+                  setFormData({ ...formData, text_en: value })
+                }
+                modules={modules}
+                formats={formats}
+                placeholder="Description (English)"
+                className="quill-editor"
+              />
+            </div>
           </div>
 
           {/* YouTube Link */}

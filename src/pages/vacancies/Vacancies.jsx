@@ -6,6 +6,8 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -25,7 +27,7 @@ const VacanciesPage = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const [vacancies, setVacancies] = useState([]);
-  const [filteredVacancies, setFilteredVacancies] = useState([]);
+  const [filteredVacancies, setFilteredVacancies] = useState([]);r
   const [roles, setRoles] = useState([]);
   const [formData, setFormData] = useState({
     role: "",
@@ -42,6 +44,26 @@ const VacanciesPage = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
+
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
 
   useEffect(() => {
     fetchVacancies();
@@ -60,10 +82,17 @@ const VacanciesPage = () => {
           vacancy.title_ru?.toLowerCase().includes(searchLower) ||
           vacancy.title_uz?.toLowerCase().includes(searchLower);
 
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
         const textMatch =
-          vacancy.text_en?.toLowerCase().includes(searchLower) ||
-          vacancy.text_ru?.toLowerCase().includes(searchLower) ||
-          vacancy.text_uz?.toLowerCase().includes(searchLower);
+          stripHtml(vacancy.text_en || "").toLowerCase().includes(searchLower) ||
+          stripHtml(vacancy.text_ru || "").toLowerCase().includes(searchLower) ||
+          stripHtml(vacancy.text_uz || "").toLowerCase().includes(searchLower);
 
         const roleMatch = vacancy.role?.name_en?.toLowerCase().includes(searchLower) ||
           vacancy.role?.name_ru?.toLowerCase().includes(searchLower) ||
@@ -217,6 +246,14 @@ const VacanciesPage = () => {
     return `${day}-${month} ${year}`;
   };
 
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   const handlePageClick = ({ selected }) => {
     setCurrentPage(selected);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -303,11 +340,14 @@ const VacanciesPage = () => {
                     </h3>
 
                     <p className="vacancy-description">
-                      {currentLang === "en"
-                        ? vacancy.text_en
-                        : currentLang === "ru"
-                        ? vacancy.text_ru
-                        : vacancy.text_uz}
+                      {truncateHtmlText(
+                        currentLang === "en"
+                          ? vacancy.text_en
+                          : currentLang === "ru"
+                          ? vacancy.text_ru
+                          : vacancy.text_uz,
+                        120
+                      )}
                     </p>
 
                     {vacancy.createdAt && (
@@ -388,6 +428,7 @@ const VacanciesPage = () => {
               </select>
             </div>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -398,16 +439,18 @@ const VacanciesPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder="Tavsif (O'zbekcha)"
+              <ReactQuill
+                theme="snow"
                 value={formData.text_uz}
-                onChange={(e) => handleInputChange("text_uz", e.target.value)}
-                className="form-textarea"
-                rows="4"
-                required
+                onChange={(value) => handleInputChange("text_uz", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Tavsif (O'zbekcha)"
+                className="quill-editor"
               />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -418,16 +461,18 @@ const VacanciesPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder="Описание (Русский)"
+              <ReactQuill
+                theme="snow"
                 value={formData.text_ru}
-                onChange={(e) => handleInputChange("text_ru", e.target.value)}
-                className="form-textarea"
-                rows="4"
-                required
+                onChange={(value) => handleInputChange("text_ru", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Описание (Русский)"
+                className="quill-editor"
               />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -438,13 +483,14 @@ const VacanciesPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
-                placeholder="Description (English)"
+              <ReactQuill
+                theme="snow"
                 value={formData.text_en}
-                onChange={(e) => handleInputChange("text_en", e.target.value)}
-                className="form-textarea"
-                rows="4"
-                required
+                onChange={(value) => handleInputChange("text_en", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Description (English)"
+                className="quill-editor"
               />
             </div>
 

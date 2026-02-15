@@ -6,6 +6,8 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -43,6 +45,26 @@ const Articles = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
 
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
+
   useEffect(() => {
     fetchArticles();
   }, []);
@@ -59,10 +81,17 @@ const Articles = () => {
           article.title_ru?.toLowerCase().includes(searchLower) ||
           article.title_uz?.toLowerCase().includes(searchLower);
 
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
         const descMatch =
-          article.desc_en?.toLowerCase().includes(searchLower) ||
-          article.desc_ru?.toLowerCase().includes(searchLower) ||
-          article.desc_uz?.toLowerCase().includes(searchLower);
+          stripHtml(article.desc_en || "").toLowerCase().includes(searchLower) ||
+          stripHtml(article.desc_ru || "").toLowerCase().includes(searchLower) ||
+          stripHtml(article.desc_uz || "").toLowerCase().includes(searchLower);
 
         return titleMatch || descMatch;
       });
@@ -182,6 +211,14 @@ const Articles = () => {
     return `${day}-${month} ${year}`;
   };
 
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   const handlePageClick = ({ selected }) => {
     setCurrentPage(selected);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -266,12 +303,14 @@ const Articles = () => {
                     </h3>
 
                     <p className="article-desc">
-                      {currentLang === "en"
-                        ? article.desc_en?.slice(0, 120)
-                        : currentLang === "ru"
-                        ? article.desc_ru?.slice(0, 120)
-                        : article.desc_uz?.slice(0, 120)}
-                      ...
+                      {truncateHtmlText(
+                        currentLang === "en"
+                          ? article.desc_en
+                          : currentLang === "ru"
+                          ? article.desc_ru
+                          : article.desc_uz,
+                        120
+                      )}
                     </p>
 
                     {article.createdAt && (
@@ -361,6 +400,7 @@ const Articles = () => {
               {editing ? t("editArticle") : t("addArticle")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -373,18 +413,20 @@ const Articles = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.desc_uz}
-                onChange={(e) =>
-                  setFormData({ ...formData, desc_uz: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, desc_uz: value })
                 }
-                placeholder={t("textUz")}
-                className="form-textarea"
-                rows="4"
-                required
+                modules={modules}
+                formats={formats}
+                placeholder="Tavsif (O'zbekcha)"
+                className="quill-editor"
               />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -397,18 +439,20 @@ const Articles = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.desc_ru}
-                onChange={(e) =>
-                  setFormData({ ...formData, desc_ru: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, desc_ru: value })
                 }
-                placeholder={t("textRu")}
-                className="form-textarea"
-                rows="4"
-                required
+                modules={modules}
+                formats={formats}
+                placeholder="Описание (Русский)"
+                className="quill-editor"
               />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -421,18 +465,20 @@ const Articles = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.desc_en}
-                onChange={(e) =>
-                  setFormData({ ...formData, desc_en: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, desc_en: value })
                 }
-                placeholder={t("textEn")}
-                className="form-textarea"
-                rows="4"
-                required
+                modules={modules}
+                formats={formats}
+                placeholder="Description (English)"
+                className="quill-editor"
               />
             </div>
 
+            {/* PDF HAVOLASI */}
             <div className="form-section">
               <h3 className="section-title">{t("pdfLink")}</h3>
               <input

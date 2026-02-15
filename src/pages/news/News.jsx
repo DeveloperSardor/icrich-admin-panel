@@ -7,6 +7,8 @@ import Slider from "react-slick";
 import ReactPaginate from "react-paginate";
 import { useTranslation } from "react-i18next";
 import Context from "../../context/Context";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -51,6 +53,32 @@ const NewsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
 
+  // React Quill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'font': [] }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['blockquote', 'code-block'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'color', 'background',
+    'list', 'bullet',
+    'align',
+    'link', 'image', 'video',
+    'blockquote', 'code-block'
+  ];
+
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -78,16 +106,23 @@ const NewsPage = () => {
           news.title_ru?.toLowerCase().includes(searchLower) ||
           news.title_uz?.toLowerCase().includes(searchLower);
         
+        // HTML taglarini olib tashlash uchun
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+        
         const textMatch = 
-          news.text_en?.toLowerCase().includes(searchLower) ||
-          news.text_ru?.toLowerCase().includes(searchLower) ||
-          news.text_uz?.toLowerCase().includes(searchLower);
+          stripHtml(news.text_en).toLowerCase().includes(searchLower) ||
+          stripHtml(news.text_ru).toLowerCase().includes(searchLower) ||
+          stripHtml(news.text_uz).toLowerCase().includes(searchLower);
         
         return titleMatch || textMatch;
       });
       
       setFilteredNews(filtered);
-      setCurrentPage(0); // Reset to first page
+      setCurrentPage(0);
     }
   }, [searchQuery, newsData]);
 
@@ -342,6 +377,14 @@ const NewsPage = () => {
     return `${day}-${month} ${year}`;
   };
 
+  // HTML matnni qisqartirish funksiyasi
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
   return (
     <div className="news-page">
       <Sidebar />
@@ -423,14 +466,16 @@ const NewsPage = () => {
                         ? news.title_ru
                         : news.title_uz}
                     </h3>
-                    <p className="news-excerpt">
-                      {currentLang === "en"
-                        ? news.text_en?.slice(0, 150)
-                        : currentLang === "ru"
-                        ? news.text_ru?.slice(0, 150)
-                        : news.text_uz?.slice(0, 150)}
-                      ...
-                    </p>
+                    <div className="news-excerpt">
+                      {truncateHtmlText(
+                        currentLang === "en"
+                          ? news.text_en
+                          : currentLang === "ru"
+                          ? news.text_ru
+                          : news.text_uz,
+                        150
+                      )}
+                    </div>
 
                     {news.createdAt && (
                       <div className="news-meta">
@@ -506,15 +551,16 @@ const NewsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.text_uz}
-                onChange={(e) =>
-                  setFormData({ ...formData, text_uz: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, text_uz: value })
                 }
+                modules={modules}
+                formats={formats}
                 placeholder={t("textUz")}
-                className="form-textarea"
-                rows="4"
-                required
+                className="quill-editor"
               />
             </div>
 
@@ -530,15 +576,16 @@ const NewsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.text_ru}
-                onChange={(e) =>
-                  setFormData({ ...formData, text_ru: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, text_ru: value })
                 }
+                modules={modules}
+                formats={formats}
                 placeholder={t("textRu")}
-                className="form-textarea"
-                rows="4"
-                required
+                className="quill-editor"
               />
             </div>
 
@@ -554,15 +601,16 @@ const NewsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.text_en}
-                onChange={(e) =>
-                  setFormData({ ...formData, text_en: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, text_en: value })
                 }
+                modules={modules}
+                formats={formats}
                 placeholder={t("textEn")}
-                className="form-textarea"
-                rows="4"
-                required
+                className="quill-editor"
               />
             </div>
 

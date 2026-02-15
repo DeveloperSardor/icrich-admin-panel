@@ -6,6 +6,8 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -31,6 +33,9 @@ const LocalList = () => {
     title_en: "",
     title_ru: "",
     title_uz: "",
+    text_en: "",
+    text_ru: "",
+    text_uz: "",
     link: "",
   });
   const [editingId, setEditingId] = useState(null);
@@ -39,6 +44,26 @@ const LocalList = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
+
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
 
   useEffect(() => {
     fetchDocs();
@@ -56,7 +81,19 @@ const LocalList = () => {
           doc.title_ru?.toLowerCase().includes(searchLower) ||
           doc.title_uz?.toLowerCase().includes(searchLower);
 
-        return titleMatch;
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
+        const textMatch =
+          stripHtml(doc.text_en || "").toLowerCase().includes(searchLower) ||
+          stripHtml(doc.text_ru || "").toLowerCase().includes(searchLower) ||
+          stripHtml(doc.text_uz || "").toLowerCase().includes(searchLower);
+
+        return titleMatch || textMatch;
       });
 
       setFilteredDocs(filtered);
@@ -131,12 +168,18 @@ const LocalList = () => {
             title_en: doc.title_en || "",
             title_ru: doc.title_ru || "",
             title_uz: doc.title_uz || "",
+            text_en: doc.text_en || "",
+            text_ru: doc.text_ru || "",
+            text_uz: doc.text_uz || "",
             link: doc.link || "",
           }
         : {
             title_en: "",
             title_ru: "",
             title_uz: "",
+            text_en: "",
+            text_ru: "",
+            text_uz: "",
             link: "",
           }
     );
@@ -150,6 +193,9 @@ const LocalList = () => {
       title_en: "",
       title_ru: "",
       title_uz: "",
+      text_en: "",
+      text_ru: "",
+      text_uz: "",
       link: "",
     });
   };
@@ -214,6 +260,14 @@ const LocalList = () => {
     const year = date.getFullYear();
 
     return `${day}-${month} ${year}`;
+  };
+
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   const handlePageClick = ({ selected }) => {
@@ -293,6 +347,19 @@ const LocalList = () => {
                         : doc.title_uz}
                     </h3>
 
+                    {doc.text_en || doc.text_ru || doc.text_uz ? (
+                      <p className="locallist-description">
+                        {truncateHtmlText(
+                          currentLang === "en"
+                            ? doc.text_en
+                            : currentLang === "ru"
+                            ? doc.text_ru
+                            : doc.text_uz,
+                          120
+                        )}
+                      </p>
+                    ) : null}
+
                     {doc.createdAt && (
                       <div className="locallist-meta">
                         <FiCalendar size={14} />
@@ -362,6 +429,7 @@ const LocalList = () => {
               {editingId ? t("editLocalList") : t("addLocalList")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -372,8 +440,18 @@ const LocalList = () => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.text_uz}
+                onChange={(value) => handleInputChange("text_uz", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Tavsif (O'zbekcha)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -384,8 +462,18 @@ const LocalList = () => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.text_ru}
+                onChange={(value) => handleInputChange("text_ru", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Описание (Русский)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -396,8 +484,18 @@ const LocalList = () => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.text_en}
+                onChange={(value) => handleInputChange("text_en", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Description (English)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* HUJJAT HAVOLASI */}
             <div className="form-section">
               <h3 className="section-title">{t("documentLink")}</h3>
               <input

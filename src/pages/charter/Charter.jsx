@@ -6,6 +6,8 @@ import Sidebar from "../../components/sidebar/Sidebar";
 import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -30,6 +32,9 @@ const Charter = () => {
     title_en: "",
     title_ru: "",
     title_uz: "",
+    description_en: "",
+    description_ru: "",
+    description_uz: "",
     link: "",
   });
   const [editingId, setEditingId] = useState(null);
@@ -38,6 +43,26 @@ const Charter = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
+
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
 
   useEffect(() => {
     fetchDocs();
@@ -55,7 +80,19 @@ const Charter = () => {
           doc.title_ru?.toLowerCase().includes(searchLower) ||
           doc.title_uz?.toLowerCase().includes(searchLower);
 
-        return titleMatch;
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
+        const descMatch =
+          stripHtml(doc.description_en || "").toLowerCase().includes(searchLower) ||
+          stripHtml(doc.description_ru || "").toLowerCase().includes(searchLower) ||
+          stripHtml(doc.description_uz || "").toLowerCase().includes(searchLower);
+
+        return titleMatch || descMatch;
       });
 
       setFilteredDocs(filtered);
@@ -130,12 +167,18 @@ const Charter = () => {
             title_en: doc.title_en || "",
             title_ru: doc.title_ru || "",
             title_uz: doc.title_uz || "",
+            description_en: doc.description_en || "",
+            description_ru: doc.description_ru || "",
+            description_uz: doc.description_uz || "",
             link: doc.link || "",
           }
         : {
             title_en: "",
             title_ru: "",
             title_uz: "",
+            description_en: "",
+            description_ru: "",
+            description_uz: "",
             link: "",
           }
     );
@@ -149,6 +192,9 @@ const Charter = () => {
       title_en: "",
       title_ru: "",
       title_uz: "",
+      description_en: "",
+      description_ru: "",
+      description_uz: "",
       link: "",
     });
   };
@@ -213,6 +259,14 @@ const Charter = () => {
     const year = date.getFullYear();
 
     return `${day}-${month} ${year}`;
+  };
+
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   const handlePageClick = ({ selected }) => {
@@ -292,6 +346,12 @@ const Charter = () => {
                         : doc.title_uz}
                     </h3>
 
+                    {doc[`description_${currentLang}`] && (
+                      <p className="charter-description">
+                        {truncateHtmlText(doc[`description_${currentLang}`], 120)}
+                      </p>
+                    )}
+
                     {doc.createdAt && (
                       <div className="charter-meta">
                         <FiCalendar size={14} />
@@ -361,6 +421,7 @@ const Charter = () => {
               {editingId ? t("editCharter") : t("addCharter")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -371,8 +432,18 @@ const Charter = () => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.description_uz}
+                onChange={(value) => handleInputChange("description_uz", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Nizom tavsifi (O'zbekcha)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -383,8 +454,18 @@ const Charter = () => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.description_ru}
+                onChange={(value) => handleInputChange("description_ru", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Описание устава (Русский)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -395,8 +476,18 @@ const Charter = () => {
                 className="form-input"
                 required
               />
+              <ReactQuill
+                theme="snow"
+                value={formData.description_en}
+                onChange={(value) => handleInputChange("description_en", value)}
+                modules={modules}
+                formats={formats}
+                placeholder="Charter Description (English)"
+                className="quill-editor"
+              />
             </div>
 
+            {/* DOCUMENT LINK */}
             <div className="form-section">
               <h3 className="section-title">{t("documentLink")}</h3>
               <input

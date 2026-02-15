@@ -7,6 +7,8 @@ import Modal from "../../components/news-add/NewsAdd";
 import Context from "../../context/Context";
 import { useTranslation } from "react-i18next";
 import Slider from "react-slick";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import {
   FiPlus,
   FiEdit2,
@@ -50,6 +52,26 @@ const ExpeditionsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 6;
 
+  // ReactQuill sozlamalari
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'color', 'background',
+    'link'
+  ];
+
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -76,10 +98,17 @@ const ExpeditionsPage = () => {
           item.title_ru?.toLowerCase().includes(searchLower) ||
           item.title_uz?.toLowerCase().includes(searchLower);
 
+        // HTML taglarini olib tashlash
+        const stripHtml = (html) => {
+          const tmp = document.createElement("DIV");
+          tmp.innerHTML = html || "";
+          return tmp.textContent || tmp.innerText || "";
+        };
+
         const textMatch =
-          item.text_en?.toLowerCase().includes(searchLower) ||
-          item.text_ru?.toLowerCase().includes(searchLower) ||
-          item.text_uz?.toLowerCase().includes(searchLower);
+          stripHtml(item.text_en || "").toLowerCase().includes(searchLower) ||
+          stripHtml(item.text_ru || "").toLowerCase().includes(searchLower) ||
+          stripHtml(item.text_uz || "").toLowerCase().includes(searchLower);
 
         return titleMatch || textMatch;
       });
@@ -205,6 +234,14 @@ const ExpeditionsPage = () => {
     const updatedImages = [...formData.images];
     updatedImages.splice(index, 1);
     setFormData({ ...formData, images: updatedImages });
+  };
+
+  // HTML matnni qisqartirish
+  const truncateHtmlText = (html, maxLength) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html || "";
+    const text = tmp.textContent || tmp.innerText || "";
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   const handleSubmit = async (e) => {
@@ -422,12 +459,14 @@ const ExpeditionsPage = () => {
                         : expedition.title_uz}
                     </h3>
                     <p className="expedition-excerpt">
-                      {currentLang === "en"
-                        ? expedition.text_en?.slice(0, 150)
-                        : currentLang === "ru"
-                        ? expedition.text_ru?.slice(0, 150)
-                        : expedition.text_uz?.slice(0, 150)}
-                      ...
+                      {truncateHtmlText(
+                        currentLang === "en"
+                          ? expedition.text_en
+                          : currentLang === "ru"
+                          ? expedition.text_ru
+                          : expedition.text_uz,
+                        150
+                      )}
                     </p>
 
                     {expedition.createdAt && (
@@ -491,6 +530,7 @@ const ExpeditionsPage = () => {
               {isEditing ? t("editExpedition") : t("addExpedition")}
             </h2>
 
+            {/* O'ZBEK TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("uzbek")}</h3>
               <input
@@ -503,18 +543,20 @@ const ExpeditionsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.text_uz}
-                onChange={(e) =>
-                  setFormData({ ...formData, text_uz: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, text_uz: value })
                 }
-                placeholder={t("textUz")}
-                className="form-textarea"
-                rows="4"
-                required
+                modules={modules}
+                formats={formats}
+                placeholder="Tavsif (O'zbekcha)"
+                className="quill-editor"
               />
             </div>
 
+            {/* RUS TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("russian")}</h3>
               <input
@@ -527,18 +569,20 @@ const ExpeditionsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.text_ru}
-                onChange={(e) =>
-                  setFormData({ ...formData, text_ru: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, text_ru: value })
                 }
-                placeholder={t("textRu")}
-                className="form-textarea"
-                rows="4"
-                required
+                modules={modules}
+                formats={formats}
+                placeholder="Описание (Русский)"
+                className="quill-editor"
               />
             </div>
 
+            {/* INGLIZ TILI */}
             <div className="form-section">
               <h3 className="section-title">{t("english")}</h3>
               <input
@@ -551,18 +595,20 @@ const ExpeditionsPage = () => {
                 className="form-input"
                 required
               />
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={formData.text_en}
-                onChange={(e) =>
-                  setFormData({ ...formData, text_en: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, text_en: value })
                 }
-                placeholder={t("textEn")}
-                className="form-textarea"
-                rows="4"
-                required
+                modules={modules}
+                formats={formats}
+                placeholder="Description (English)"
+                className="quill-editor"
               />
             </div>
 
+            {/* MEDIA BO'LIMI */}
             <div className="form-section">
               <h3 className="section-title">{t("media")}</h3>
               <div className="media-input-group">
