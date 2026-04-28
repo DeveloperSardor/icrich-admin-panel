@@ -43,6 +43,7 @@ const ExpeditionsPage = () => {
     text_uz: "",
     youtube_link: "",
     images: [],
+    date: "",
   });
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -152,6 +153,7 @@ const ExpeditionsPage = () => {
       text_uz: "",
       youtube_link: "",
       images: [],
+      date: "",
     });
     setVideoPreview("");
     setYoutubeError("");
@@ -272,6 +274,7 @@ const ExpeditionsPage = () => {
         text_uz: formData.text_uz,
         youtube_link: formData.youtube_link,
         images: formData.images,
+        date: formData.date,
       };
 
       const res = await axios[method](url, payload);
@@ -299,6 +302,7 @@ const ExpeditionsPage = () => {
       text_uz: expedition.text_uz,
       youtube_link: expedition.youtube_link || "",
       images: expedition.images || [],
+      date: expedition.date ? expedition.date.substring(0, 10) : "",
       id: expedition._id,
     });
     setIsEditing(true);
@@ -469,10 +473,10 @@ const ExpeditionsPage = () => {
                       )}
                     </p>
 
-                    {expedition.createdAt && (
+                    {(expedition.date || expedition.createdAt) && (
                       <div className="expedition-meta">
                         <FiCalendar size={14} />
-                        <span>{formatDate(expedition.createdAt)}</span>
+                        <span>{formatDate(expedition.date || expedition.createdAt)}</span>
                       </div>
                     )}
                   </div>
@@ -658,6 +662,19 @@ const ExpeditionsPage = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("date") || "Sana"}</h3>
+              <div className="media-input-group">
+                <FiCalendar size={20} />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <button type="submit" className="submit-btn" disabled={loadingFiles}>

@@ -37,6 +37,7 @@ const LocalList = () => {
     text_ru: "",
     text_uz: "",
     link: "",
+    date: "",
   });
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -172,6 +173,7 @@ const LocalList = () => {
             text_ru: doc.text_ru || "",
             text_uz: doc.text_uz || "",
             link: doc.link || "",
+            date: doc.date ? doc.date.substring(0, 10) : "",
           }
         : {
             title_en: "",
@@ -181,6 +183,7 @@ const LocalList = () => {
             text_ru: "",
             text_uz: "",
             link: "",
+            date: "",
           }
     );
     setIsModalOpen(true);
@@ -197,6 +200,7 @@ const LocalList = () => {
       text_ru: "",
       text_uz: "",
       link: "",
+      date: "",
     });
   };
 
@@ -360,10 +364,10 @@ const LocalList = () => {
                       </p>
                     ) : null}
 
-                    {doc.createdAt && (
+                    {(doc.date || doc.createdAt) && (
                       <div className="locallist-meta">
                         <FiCalendar size={14} />
-                        <span>{formatDate(doc.createdAt)}</span>
+                        <span>{formatDate(doc.date || doc.createdAt)}</span>
                       </div>
                     )}
 
@@ -506,6 +510,19 @@ const LocalList = () => {
                 className="form-input"
                 required
               />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("date") || "Sana"}</h3>
+              <div className="media-input-group">
+                <FiCalendar size={20} />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange("date", e.target.value)}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <button type="submit" className="submit-btn">

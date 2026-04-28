@@ -42,6 +42,7 @@ const UneskoPage = () => {
     text_uz: "",
     youtube_link: "",
     images: [],
+    date: "",
   });
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -151,6 +152,7 @@ const UneskoPage = () => {
       text_uz: "",
       youtube_link: "",
       images: [],
+      date: "",
     });
     setVideoPreview("");
     setYoutubeError("");
@@ -261,6 +263,7 @@ const UneskoPage = () => {
         text_uz: formData.text_uz,
         youtube_link: formData.youtube_link,
         images: formData.images,
+        date: formData.date,
       };
 
       const res = await axios[method](url, payload);
@@ -288,6 +291,7 @@ const UneskoPage = () => {
       text_uz: unesko.text_uz,
       youtube_link: unesko.youtube_link || "",
       images: unesko.images || [],
+      date: unesko.date ? unesko.date.substring(0, 10) : "",
       id: unesko._id,
     });
     setIsEditing(true);
@@ -496,10 +500,10 @@ const UneskoPage = () => {
                       )}
                     </p>
 
-                    {unesko.createdAt && (
+                    {(unesko.date || unesko.createdAt) && (
                       <div className="unesko-meta">
                         <FiCalendar size={14} />
-                        <span>{formatDate(unesko.createdAt)}</span>
+                        <span>{formatDate(unesko.date || unesko.createdAt)}</span>
                       </div>
                     )}
                   </div>
@@ -684,6 +688,19 @@ const UneskoPage = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("date") || "Sana"}</h3>
+              <div className="media-input-group">
+                <FiCalendar size={20} />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <button type="submit" className="submit-btn" disabled={loadingFiles}>

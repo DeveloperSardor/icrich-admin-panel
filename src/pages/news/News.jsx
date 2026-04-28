@@ -42,6 +42,7 @@ const NewsPage = () => {
     text_uz: "",
     youtube_link: "",
     files: [],
+    date: "",
   });
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -171,6 +172,7 @@ const NewsPage = () => {
       text_uz: "",
       youtube_link: "",
       files: [],
+      date: "",
     });
     setVideoPreview("");
     setYoutubeError("");
@@ -295,6 +297,7 @@ const NewsPage = () => {
       text_uz: formData.text_uz,
       youtube_link: formData.youtube_link,
       files: formData.files.map((file) => file.link),
+      date: formData.date,
     };
 
     try {
@@ -327,6 +330,7 @@ const NewsPage = () => {
       text_uz: news.text_uz,
       youtube_link: news.youtube_link,
       files: news.files || [],
+      date: news.date ? news.date.substring(0, 10) : "",
       id: news._id,
     });
     setIsEditing(true);
@@ -477,10 +481,10 @@ const NewsPage = () => {
                       )}
                     </div>
 
-                    {news.createdAt && (
+                    {(news.date || news.createdAt) && (
                       <div className="news-meta">
                         <FiCalendar size={14} />
-                        <span>{formatDate(news.createdAt)}</span>
+                        <span>{formatDate(news.date || news.createdAt)}</span>
                       </div>
                     )}
                   </div>
@@ -648,6 +652,19 @@ const NewsPage = () => {
               </div>
 
               {formData.files.length > 0 && renderUploadedFiles()}
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("date") || "Sana"}</h3>
+              <div className="media-input-group">
+                <FiCalendar size={20} />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <button

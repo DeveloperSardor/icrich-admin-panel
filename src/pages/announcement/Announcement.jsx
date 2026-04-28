@@ -36,6 +36,7 @@ const AnnouncementPage = () => {
     desc_ru: "",
     desc_uz: "",
     img: "",
+    date: "",
   });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -185,6 +186,7 @@ const AnnouncementPage = () => {
       desc_ru: "",
       desc_uz: "",
       img: "",
+      date: "",
     });
     setEditing(false);
   };
@@ -326,10 +328,10 @@ const AnnouncementPage = () => {
                       {truncateHtmlText(ann[`desc_${currentLang}`], 150)}
                     </p>
 
-                    {ann.createdAt && (
+                    {(ann.date || ann.createdAt) && (
                       <div className="announcement-meta">
                         <FiCalendar size={14} />
-                        <span>{formatDate(ann.createdAt)}</span>
+                        <span>{formatDate(ann.date || ann.createdAt)}</span>
                       </div>
                     )}
                   </div>
@@ -339,7 +341,10 @@ const AnnouncementPage = () => {
                       className="action-btn edit-btn"
                       onClick={() => {
                         setEditing(true);
-                        setCurrentAnnouncement(ann);
+                        setCurrentAnnouncement({
+                          ...ann,
+                          date: ann.date ? ann.date.substring(0, 10) : ""
+                        });
                         setModalOpen(true);
                       }}
                       title={t("edit")}
@@ -524,6 +529,19 @@ const AnnouncementPage = () => {
                   </button>
                 </div>
               )}
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("date") || "Sana"}</h3>
+              <div className="media-input-group">
+                <FiCalendar size={20} />
+                <input
+                  type="date"
+                  value={currentAnnouncement.date}
+                  onChange={(e) => setCurrentAnnouncement({ ...currentAnnouncement, date: e.target.value })}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <button type="submit" className="submit-btn">

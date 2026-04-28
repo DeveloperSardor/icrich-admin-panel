@@ -38,6 +38,7 @@ const Articles = () => {
     desc_ru: "",
     desc_uz: "",
     pdf_file: "",
+    date: "",
   });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -180,6 +181,7 @@ const Articles = () => {
       desc_ru: "",
       desc_uz: "",
       pdf_file: "",
+      date: "",
     });
   };
 
@@ -313,10 +315,10 @@ const Articles = () => {
                       )}
                     </p>
 
-                    {article.createdAt && (
+                    {(article.date || article.createdAt) && (
                       <div className="article-meta">
                         <FiCalendar size={14} />
-                        <span>{formatDate(article.createdAt)}</span>
+                        <span>{formatDate(article.date || article.createdAt)}</span>
                       </div>
                     )}
 
@@ -348,7 +350,10 @@ const Articles = () => {
                       className="action-btn edit-btn"
                       onClick={() => {
                         setEditing(true);
-                        setFormData(article);
+                        setFormData({
+                          ...article,
+                          date: article.date ? article.date.substring(0, 10) : ""
+                        });
                         setModalOpen(true);
                       }}
                       title={t("edit")}
@@ -506,6 +511,19 @@ const Articles = () => {
                 </a>
               </div>
             )}
+
+            <div className="form-section">
+              <h3 className="section-title">{t("date") || "Sana"}</h3>
+              <div className="media-input-group">
+                <FiCalendar size={20} />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+            </div>
 
             <button type="submit" className="submit-btn">
               {editing ? t("save") : t("addArticle")}

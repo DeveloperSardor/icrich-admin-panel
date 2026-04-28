@@ -364,5 +364,10 @@
   "youtubeLinkPlaceholder": "Введите ссылку на YouTube",
   "viewYouTube": "Просмотр на YouTube",
   "mediaRequired": "Требуется ссылка на YouTube или PDF",
-  "onlyOneMediaAllowed": "Разрешен только один тип медиа (YouTube или PDF)"
+  "onlyOneMediaAllowed": "Разрешен только один тип медиа (YouTube или PDF)",
+  "dashboardStats": {
+    "subtitle": "Краткая статистика по разделам",
+    "records": "записей",
+    "retry": "Обновить"
+  }
 }

@@ -364,5 +364,10 @@
   "youtubeLinkPlaceholder": "Enter YouTube link",
   "viewYouTube": "View on YouTube",
   "mediaRequired": "YouTube or PDF link is required",
-  "onlyOneMediaAllowed": "Only one media type (YouTube or PDF) is allowed"
+  "onlyOneMediaAllowed": "Only one media type (YouTube or PDF) is allowed",
+  "dashboardStats": {
+    "subtitle": "At-a-glance counts from your content",
+    "records": "records",
+    "retry": "Refresh"
+  }
 }

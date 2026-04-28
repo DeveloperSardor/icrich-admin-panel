@@ -27,7 +27,7 @@ const VacanciesPage = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const [vacancies, setVacancies] = useState([]);
-  const [filteredVacancies, setFilteredVacancies] = useState([]);r
+  const [filteredVacancies, setFilteredVacancies] = useState([]);
   const [roles, setRoles] = useState([]);
   const [formData, setFormData] = useState({
     role: "",
@@ -37,6 +37,7 @@ const VacanciesPage = () => {
     text_en: "",
     text_ru: "",
     text_uz: "",
+    date: "",
   });
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -186,6 +187,7 @@ const VacanciesPage = () => {
             text_en: vacancy.text_en || "",
             text_ru: vacancy.text_ru || "",
             text_uz: vacancy.text_uz || "",
+            date: vacancy.date ? vacancy.date.substring(0, 10) : "",
           }
         : {
             role: "",
@@ -195,6 +197,7 @@ const VacanciesPage = () => {
             text_en: "",
             text_ru: "",
             text_uz: "",
+            date: "",
           }
     );
     setIsModalOpen(true);
@@ -211,6 +214,7 @@ const VacanciesPage = () => {
       text_en: "",
       text_ru: "",
       text_uz: "",
+      date: "",
     });
   };
 
@@ -350,10 +354,10 @@ const VacanciesPage = () => {
                       )}
                     </p>
 
-                    {vacancy.createdAt && (
+                    {(vacancy.date || vacancy.createdAt) && (
                       <div className="vacancy-meta">
                         <FiCalendar size={14} />
-                        <span>{formatDate(vacancy.createdAt)}</span>
+                        <span>{formatDate(vacancy.date || vacancy.createdAt)}</span>
                       </div>
                     )}
                   </div>
@@ -492,6 +496,19 @@ const VacanciesPage = () => {
                 placeholder="Description (English)"
                 className="quill-editor"
               />
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">{t("date") || "Sana"}</h3>
+              <div className="media-input-group">
+                <FiCalendar size={20} />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange("date", e.target.value)}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <button type="submit" className="submit-btn">

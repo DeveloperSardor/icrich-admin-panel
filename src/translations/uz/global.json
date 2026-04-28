@@ -369,6 +369,11 @@
   "youtubeLinkPlaceholder": "YouTube havolasini kiriting",
   "viewYouTube": "YouTube ko'rish",
   "mediaRequired": "YouTube yoki PDF havolasi talab qilinadi",
-  "onlyOneMediaAllowed": "Faqat bitta media turi (YouTube yoki PDF) ruxsat etilgan"
+  "onlyOneMediaAllowed": "Faqat bitta media turi (YouTube yoki PDF) ruxsat etilgan",
+  "dashboardStats": {
+    "subtitle": "Kontent bo'yicha qisqacha statistika",
+    "records": "yozuv",
+    "retry": "Yangilash"
   }
+}
 

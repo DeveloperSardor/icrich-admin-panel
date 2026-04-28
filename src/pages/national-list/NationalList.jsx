@@ -64,6 +64,7 @@ const NationalListPage = () => {
     text_uz: "",
     youtube_link: "",
     images: [],
+    date: "",
   });
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -105,6 +106,7 @@ const NationalListPage = () => {
       text_uz: "",
       youtube_link: "",
       images: [],
+      date: "",
     });
     setVideoPreview("");
     setYoutubeError("");
@@ -250,6 +252,7 @@ const NationalListPage = () => {
       text_uz: formData.text_uz,
       youtube_link: formData.youtube_link,
       images: formData.images,
+      date: formData.date,
     };
 
     try {
@@ -290,6 +293,7 @@ const NationalListPage = () => {
       text_uz: national.text_uz || "",
       youtube_link: national.youtube_link || "",
       images: national.images || [],
+      date: national.date ? national.date.substring(0, 10) : "",
       id: national._id,
     });
     setIsEditing(true);
@@ -406,6 +410,12 @@ const NationalListPage = () => {
                   {/* Content Section */}
                   <h2>{title}</h2>
                   <p>{truncateHtmlText(text, 150)}</p>
+                  
+                  {(national.date || national.createdAt) && (
+                    <div className="card-meta" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#666', fontSize: '14px', marginBottom: '10px' }}>
+                       📅 {new Date(national.date || national.createdAt).toLocaleDateString()}
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="card-actions">
@@ -567,6 +577,16 @@ const NationalListPage = () => {
               disabled={loadingFiles}
             />
             <p>{t("maxFileSize")}</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="date">{t("date") || "Sana"}</label>
+            <input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            />
           </div>
 
           {renderUploadedFiles()}
