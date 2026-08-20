@@ -26,6 +26,7 @@ const LeadershipAdmin = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [notification, setNotification] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
+  const [pendingScheduleDate, setPendingScheduleDate] = useState('');
 
   const [formData, setFormData] = useState({
     name: { uz: '', ru: '', en: '' },
@@ -41,6 +42,7 @@ const LeadershipAdmin = () => {
     scientificInterests: [],
     schedule: {
       days: [],
+      dates: [],
       start: '',
       end: ''
     },
@@ -181,7 +183,7 @@ const LeadershipAdmin = () => {
         img: formData.img,
         academicDegree: formData.academicDegree || '',
         scientificInterests: formData.scientificInterests || [],
-        schedule: formData.schedule || { days: [], start: '', end: '' },
+        schedule: formData.schedule || { days: [], dates: [], start: '', end: '' },
         order: formData.order || 0,
         isActive: formData.isActive
       };
@@ -253,7 +255,12 @@ const LeadershipAdmin = () => {
         img: leader.img || '',
         academicDegree: leader.academicDegree || '',
         scientificInterests: leader.scientificInterests || [],
-        schedule: leader.schedule || { days: [], start: '', end: '' },
+        schedule: {
+          days: leader.schedule?.days || [],
+          dates: leader.schedule?.dates || [],
+          start: leader.schedule?.start || '',
+          end: leader.schedule?.end || ''
+        },
         order: leader.order || 0,
         isActive: leader.isActive !== false
       });
@@ -271,7 +278,7 @@ const LeadershipAdmin = () => {
         img: '',
         academicDegree: '',
         scientificInterests: [],
-        schedule: { days: [], start: '', end: '' },
+        schedule: { days: [], dates: [], start: '', end: '' },
         order: 0,
         isActive: true
       });
@@ -284,6 +291,7 @@ const LeadershipAdmin = () => {
     setIsModalOpen(false);
     setEditingId(null);
     setActiveTab('basic');
+    setPendingScheduleDate('');
   };
 
   const filteredLeaders = leaders.filter(leader => {
@@ -1381,6 +1389,106 @@ const LeadershipAdmin = () => {
                           </label>
                         ))}
                       </div>
+
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        marginBottom: '0.25rem'
+                      }}>
+                        {t('leadership.form.scheduleDates')}
+                      </label>
+                      <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                        {t('leadership.form.scheduleDatesHint')}
+                      </p>
+                      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <input
+                          type="date"
+                          value={pendingScheduleDate}
+                          onChange={(e) => setPendingScheduleDate(e.target.value)}
+                          style={{
+                            flex: 1,
+                            padding: '0.75rem 1rem',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.95rem',
+                            backgroundColor: 'white'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!pendingScheduleDate) return;
+                            const existingDates = formData.schedule.dates || [];
+                            if (existingDates.includes(pendingScheduleDate)) {
+                              setPendingScheduleDate('');
+                              return;
+                            }
+                            const dates = [...existingDates, pendingScheduleDate].sort();
+                            setFormData(prev => ({
+                              ...prev,
+                              schedule: { ...prev.schedule, dates }
+                            }));
+                            setPendingScheduleDate('');
+                          }}
+                          style={{
+                            padding: '0.75rem 1.25rem',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            backgroundColor: '#667eea',
+                            color: 'white',
+                            fontWeight: '600',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t('leadership.form.addDate')}
+                        </button>
+                      </div>
+                      {(formData.schedule.dates || []).length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                          {(formData.schedule.dates || []).map(date => (
+                            <span key={date} style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              padding: '0.375rem 0.75rem',
+                              borderRadius: '999px',
+                              backgroundColor: '#f0f9ff',
+                              border: '1px solid #667eea',
+                              fontSize: '0.8125rem',
+                              color: '#0f172a'
+                            }}>
+                              {date}
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({
+                                  ...prev,
+                                  schedule: {
+                                    ...prev.schedule,
+                                    dates: prev.schedule.dates.filter(d => d !== date)
+                                  }
+                                }))}
+                                style={{
+                                  border: 'none',
+                                  background: 'none',
+                                  cursor: 'pointer',
+                                  color: '#667eea',
+                                  fontWeight: '700',
+                                  fontSize: '0.875rem',
+                                  lineHeight: 1,
+                                  padding: 0
+                                }}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                         <div>
                           <label style={{
