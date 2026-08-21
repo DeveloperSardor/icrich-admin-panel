@@ -180,7 +180,7 @@ const NewsPage = () => {
 
   const validateYouTubeUrl = (url) => {
     const youtubePattern =
-      /^(https?\:\/\/)?(www\.youtube\.com\/(?:[^\/\n\s]+\/)*|youtu\.be\/)([a-zA-Z0-9_-]{11})$/;
+      /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[&?].*)?$/;
     return youtubePattern.test(url);
   };
 
